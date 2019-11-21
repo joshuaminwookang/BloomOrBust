@@ -10,7 +10,7 @@
 
 #define M_NUM_BITS 1000 // number of elements in Bloom filter
 #define K_NUM_HASH 5    // number of hash functions
-
+#define HASH_NUM 5381
 #define BUF_SIZE 100    // max size of word
 
 /*
@@ -19,7 +19,7 @@
  */
 unsigned long hashstring(char *word) {
     unsigned char *str = (unsigned char*)word;
-    unsigned long hash = 5381;
+    unsigned long hash = HASH_NUM;
     int c;
 
     while ((c = *str++)) {
