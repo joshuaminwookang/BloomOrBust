@@ -103,7 +103,7 @@ void checkWordsFromFile(FILE *fp, unsigned char* filter) {
 }
 
 int main(int argc, char** argv) {
-    srand(time(NULL));
+    
     unsigned char *bloom_filter_array = calloc(M_NUM_BITS, sizeof(unsigned char));
     
     FILE *add_fp = fopen(argv[1], "r");
