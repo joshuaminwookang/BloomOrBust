@@ -4,3 +4,6 @@ bloom: bloom.c
 clean:  
 	@rm -rf *.o *~ *.dSYM bloom
 	@echo Made clean.
+	
+love:
+	@echo Not war.
