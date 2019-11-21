@@ -117,5 +117,7 @@ int main(int argc, char** argv) {
     addWordsFromFile(add_fp, bloom_filter_array);
     checkWordsFromFile(check_fp, bloom_filter_array);
 
+    free(bloom_filter_array);
+
     return 0;
 }
