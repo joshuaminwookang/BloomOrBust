@@ -1,5 +1,5 @@
 /*
- * Bloom filter.
+ * Bloom filter with sequential hash functions.
  *
  * (c) 2019 Josh Kang and Andrew Thai
  */
@@ -7,14 +7,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <time.h>
 
-#define M_NUM_BITS 100
-#define K_NUM_HASH 5
+#define M_NUM_BITS 1000 // number of elements in Bloom filter
+#define K_NUM_HASH 5    // number of hash functions
 
-#define BUF_SIZE 100
-
-
+#define BUF_SIZE 100    // max size of word
 
 /*
  * Hash function for a string.
@@ -89,24 +86,31 @@ void addWordsFromFile(FILE *fp, unsigned char* filter) {
     char buffer[BUF_SIZE];
 
     while (fscanf(fp, "%s", buffer) == 1) {
-        printf("Read: %s\n", buffer);
         mapToBloom(filter, buffer);
     }
+}
+
+/*
+ * Checks if words from file are in Bloom filter.
+ */
+void checkWordsFromFile(FILE *fp, unsigned char* filter) {
+    char buffer[BUF_SIZE];
+
+    while (fscanf(fp, "%s", buffer) == 1) {
+        printf("%d: %s\n", checkBloom(filter, buffer), buffer);
+    }
+
 }
 
 int main(int argc, char** argv) {
     srand(time(NULL));
     unsigned char *bloom_filter_array = calloc(M_NUM_BITS, sizeof(unsigned char));
     
-    FILE *fp = fopen(argv[1], "r");    
+    FILE *add_fp = fopen(argv[1], "r");
+    FILE *check_fp = fopen(argv[2], "r");      
     
-    addWordsFromFile(fp, bloom_filter_array);
-
-    char *test1 = "be";
-
-    //mapToBloom(bloom_filter_array, test1);
-
-    printf("Found word: %d \n", checkBloom(bloom_filter_array, test1));
+    addWordsFromFile(add_fp, bloom_filter_array);
+    checkWordsFromFile(check_fp, bloom_filter_array);
 
     return 0;
 }
