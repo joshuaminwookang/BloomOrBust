@@ -104,6 +104,11 @@ void checkWordsFromFile(FILE *fp, unsigned char* filter) {
 
 int main(int argc, char** argv) {
     
+    if (argc != 3) {
+        printf("Usage: ./bloom WordsToAdd WordsToCheck\n");
+        exit(1);
+    }
+
     unsigned char *bloom_filter_array = calloc(M_NUM_BITS, sizeof(unsigned char));
     
     FILE *add_fp = fopen(argv[1], "r");
