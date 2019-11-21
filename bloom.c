@@ -1,17 +1,24 @@
+/*
+ * Bloom filter.
+ *
+ * (c) 2019 Josh Kang and Andrew Thai
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
 
- #define M_NUM_BITS 100
- #define K_NUM_HASH 5
+#define M_NUM_BITS 100
+#define K_NUM_HASH 5
+
+#define BUF_SIZE 100
 
 
-// readfile function
 
 /*
  * Hash function for a string.
- * 
+ * Given a string, returns a number.
  */
 unsigned long hashstring(char *word) {
     unsigned char *str = (unsigned char*)word;
@@ -75,18 +82,31 @@ int checkBloom (unsigned char *filter, char* word) {
     return 1;
 }
 
+/*
+ * Reads words from file and adds them to Bloom filter.
+ */
+void addWordsFromFile(FILE *fp, unsigned char* filter) {
+    char buffer[BUF_SIZE];
+
+    while (fscanf(fp, "%s", buffer) == 1) {
+        printf("Read: %s\n", buffer);
+        mapToBloom(filter, buffer);
+    }
+}
 
 int main(int argc, char** argv) {
     srand(time(NULL));
     unsigned char *bloom_filter_array = calloc(M_NUM_BITS, sizeof(unsigned char));
-    char *test = "bloom";
-    mapToBloom(bloom_filter_array, test);
+    
+    FILE *fp = fopen(argv[1], "r");    
+    
+    addWordsFromFile(fp, bloom_filter_array);
 
-    for (int i = 0; i< M_NUM_BITS; i++) {
-        if (bloom_filter_array[i] == 1) {printf("Index: %d \n", i);}
-    }
+    char *test1 = "be";
 
-    printf("Found word: %d \n", checkBloom(bloom_filter_array, test));
+    //mapToBloom(bloom_filter_array, test1);
+
+    printf("Found word: %d \n", checkBloom(bloom_filter_array, test1));
 
     return 0;
 }
