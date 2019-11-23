@@ -8,15 +8,17 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include "bloom.h"
+
 
 #define M_NUM_BITS 1000 // number of elements in Bloom filter
 #define K_NUM_HASH 5    // number of hash functions
 #define HASH_NUM 5381
-#define BUF_SIZE 100    // max size of word
 
-typedef struct String {
-    char word[BUF_SIZE];
-} String;
+
+// typedef struct String {
+//     char word[BUF_SIZE];
+// } String;
 
 /*
  * Hash function for a string using Horner's Rule.
@@ -107,17 +109,7 @@ void checkWordsFromFile(FILE *fp, unsigned char* filter) {
 
 }
 
-/*
- * Reads words from file into array
- */
-void fileToArray(FILE *fp, String* words) {
-    char buffer[BUF_SIZE];
 
-    int i = 0;
-    while (fscanf(fp, "%s", buffer) == 1) {
-        strcpy(words[i++].word, buffer);
-    }
-}
 
 /*
  * Reads words from array and adds them to Bloom filter.
@@ -150,6 +142,7 @@ int main(int argc, char** argv) {
     checkWordsFromFile(check_fp, bloom_filter_array);
 
     free(bloom_filter_array);
+    free(string_array);
 
     return 0;
 }
