@@ -14,6 +14,10 @@
 #define HASH_NUM 5381
 #define BUF_SIZE 100    // max size of word
 
+typedef struct String {
+    char word[BUF_SIZE];
+} String;
+
 /*
  * Hash function for a string using Horner's Rule.
  * Given a string, returns a number.
