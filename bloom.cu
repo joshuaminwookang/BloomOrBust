@@ -20,16 +20,16 @@ int main(int argc, char** argv) {
 
     unsigned char *h_bloom_filter_array = calloc(M_NUM_BITS, sizeof(unsigned char));
     String *h_string_array = (String*)malloc(15 * sizeof(String));
-
     String *d_string_array;
-
-    
 
     FILE *add_fp = fopen(argv[1], "r");
     FILE *check_fp = fopen(argv[2], "r");      
     
-    fileToArray(add_fp, string_array);
-
+    fileToArray(add_fp, h_string_array);
+    
+    checkCudaErrors(cudaMalloc((void **) &d_string_array, 15*sizeof(String)));
+    checkCudaErros(cudaMemcpy(d_string_array, h_string_array, 15*sizeof(STtring), cudaMemcpyHostToDevice));
+    
     free(bloom_filter_array);
     free(string_array);
 

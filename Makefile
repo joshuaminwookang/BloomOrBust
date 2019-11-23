@@ -275,7 +275,7 @@ endif
 # Target rules
 all: build
 
-build: bloom.c bloom.cu
+build: bloom-cuda bloom-seq
 
 check.deps:
 ifeq ($(SAMPLE_ENABLED),0)
