@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #define M_NUM_BITS 1000 // number of elements in Bloom filter
 #define K_NUM_HASH 5    // number of hash functions
@@ -14,16 +15,15 @@
 #define BUF_SIZE 100    // max size of word
 
 /*
- * Hash function for a string.
+ * Hash function for a string using Horner's Rule.
  * Given a string, returns a number.
  */
 unsigned long hashstring(char *word) {
     unsigned char *str = (unsigned char*)word;
     unsigned long hash = HASH_NUM;
-    int c;
 
-    while ((c = *str++)) {
-        hash = ((hash << 5) + hash) + c;
+    while (*str) {
+        hash = ((hash << 5) + hash) + *(str++);
     }
     
     return hash;
@@ -36,7 +36,7 @@ unsigned long hashstring(char *word) {
  */
 void hash(long *hashes, char* word) {
     unsigned long x = hashstring(word);
-    unsigned long y = hashstring(word) >> 4;
+    unsigned long y = x >> 4;
 
     for(int i=0; i<K_NUM_HASH; i++) {
         x = (x+y) % M_NUM_BITS;
@@ -88,6 +88,7 @@ void addWordsFromFile(FILE *fp, unsigned char* filter) {
     while (fscanf(fp, "%s", buffer) == 1) {
         mapToBloom(filter, buffer);
     }
+
 }
 
 /*
@@ -102,6 +103,19 @@ void checkWordsFromFile(FILE *fp, unsigned char* filter) {
 
 }
 
+/*
+ * Reads words from file into array
+ */
+void fileToArray(FILE *fp, char* words) {
+    char buffer[BUF_SIZE];
+
+    int i = 0;
+    while (fscanf(fp, "%s", buffer) == 1) {
+        strcpy(&words[i++], buffer);
+    }
+}
+
+
 int main(int argc, char** argv) {
     
     if (argc != 3) {
@@ -111,9 +125,12 @@ int main(int argc, char** argv) {
 
     unsigned char *bloom_filter_array = calloc(M_NUM_BITS, sizeof(unsigned char));
     
+
     FILE *add_fp = fopen(argv[1], "r");
     FILE *check_fp = fopen(argv[2], "r");      
     
+    //fileToArray(add_fp, words_array);
+    //addWordsFromArray(words_array, bloom_filter_array);
     addWordsFromFile(add_fp, bloom_filter_array);
     checkWordsFromFile(check_fp, bloom_filter_array);
 
