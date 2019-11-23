@@ -110,15 +110,25 @@ void checkWordsFromFile(FILE *fp, unsigned char* filter) {
 /*
  * Reads words from file into array
  */
-void fileToArray(FILE *fp, char* words) {
+void fileToArray(FILE *fp, String* words) {
     char buffer[BUF_SIZE];
 
     int i = 0;
     while (fscanf(fp, "%s", buffer) == 1) {
-        strcpy(&words[i++], buffer);
+        strcpy(words[i++].word, buffer);
     }
 }
 
+/*
+ * Reads words from array and adds them to Bloom filter.
+ */
+void addWordsFromArray(String *words, unsigned char* filter) {
+
+    for (int i = 0; i < 15; i++) {
+        mapToBloom(filter, words[i].word);
+    }
+
+}
 
 int main(int argc, char** argv) {
     
@@ -128,14 +138,15 @@ int main(int argc, char** argv) {
     }
 
     unsigned char *bloom_filter_array = calloc(M_NUM_BITS, sizeof(unsigned char));
-    
+    String *string_array = (String*)malloc(15 * sizeof(String));
+
 
     FILE *add_fp = fopen(argv[1], "r");
     FILE *check_fp = fopen(argv[2], "r");      
     
-    //fileToArray(add_fp, words_array);
-    //addWordsFromArray(words_array, bloom_filter_array);
-    addWordsFromFile(add_fp, bloom_filter_array);
+    fileToArray(add_fp, string_array);
+    addWordsFromArray(string_array, bloom_filter_array);
+    //addWordsFromFile(add_fp, bloom_filter_array);
     checkWordsFromFile(check_fp, bloom_filter_array);
 
     free(bloom_filter_array);
