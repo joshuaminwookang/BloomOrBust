@@ -20,6 +20,9 @@ int main(int argc, char** argv) {
 
     unsigned char *h_bloom_filter_array = calloc(M_NUM_BITS, sizeof(unsigned char));
     String *h_string_array = (String*)malloc(15 * sizeof(String));
+
+    String *d_string_array;
+
     
 
     FILE *add_fp = fopen(argv[1], "r");
