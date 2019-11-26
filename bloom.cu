@@ -9,7 +9,7 @@
 #include <helper_cuda.h>
 #include "bloom.h"
 
-
+#define M_NUM_BITS 1024
 
 int main(int argc, char** argv) {
     
@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    unsigned char *h_bloom_filter_array = calloc(M_NUM_BITS, sizeof(unsigned char));
+    unsigned char *h_bloom_filter_array = (unsigned char*)calloc(M_NUM_BITS, sizeof(unsigned char));
     String *h_string_array = (String*)malloc(15 * sizeof(String));
     String *d_string_array;
 
@@ -28,10 +28,10 @@ int main(int argc, char** argv) {
     fileToArray(add_fp, h_string_array);
     
     checkCudaErrors(cudaMalloc((void **) &d_string_array, 15*sizeof(String)));
-    checkCudaErros(cudaMemcpy(d_string_array, h_string_array, 15*sizeof(STtring), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(d_string_array, h_string_array, 15*sizeof(String), cudaMemcpyHostToDevice));
     
-    free(bloom_filter_array);
-    free(string_array);
+    free(h_bloom_filter_array);
+    free(h_string_array);
 
     return 0;
 }
