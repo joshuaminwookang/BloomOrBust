@@ -30,6 +30,8 @@ int main(int argc, char** argv) {
     checkCudaErrors(cudaMalloc((void **) &d_string_array, 15*sizeof(String)));
     checkCudaErrors(cudaMemcpy(d_string_array, h_string_array, 15*sizeof(String), cudaMemcpyHostToDevice));
     
+    cudaFree(d_string_array);
+
     free(h_bloom_filter_array);
     free(h_string_array);
 
