@@ -106,9 +106,7 @@ int main(int argc, char** argv)
 
     checkCudaErrors(cudaMemcpy(h_bf_array, d_bf_array, M_NUM_BITS*sizeof(unsigned char), cudaMemcpyDeviceToHost));
     
-    for (int i = 0; i < M_NUM_BITS; i++) {
-      printf("%d\n", h_bf_array[i]);
-    }
+    checkWordsFromFile(check_fp, bloom_filter_array);
     
     cudaFree(d_bf_array);
     cudaFree(d_string_array);
