@@ -9,7 +9,49 @@
 #include <helper_cuda.h>
 #include "bloom.h"
 
-#define M_NUM_BITS 1024
+__device__ unsigned long hashstring(char *word)
+{
+  unsigned char *str = (unsigned char *)word;
+  unsigned long hash = HASH_NUM;
+
+  while (*str)
+    {
+      hash = ((hash << 5) + hash) + *(str++);
+    }
+
+  return hash;
+}
+
+
+__device__ void hash(long *hashes, char *word)
+{
+  unsigned long x = hashstring(word);
+  unsigned long y = x >> 4;
+
+  for (int i = 0; i < K_NUM_HASH; i++)
+    {
+      x = (x + y) % M_NUM_BITS;
+      y = (y + i) % M_NUM_BITS;
+      hashes[i] = x;
+    }
+}
+
+__device__ void mapToBloom(unsigned char *filter, char *word)
+{
+  long hashes[K_NUM_HASH];
+  hash(hashes, word);
+
+  for (int i = 0; i < K_NUM_HASH; i++)
+    {
+      filter[hashes[i]] = 1;
+    }
+}
+
+__global__ void addToBloom(unsigned char *bf_array, String *words) 
+{
+  int index =  blockIdx.x * blockDim.x + threadIdx.x;
+  mapToBloom(bf_array, words[index].word);
+}
 
 int main(int argc, char** argv) 
 {
@@ -25,7 +67,7 @@ int main(int argc, char** argv)
     String *h_string_array = (String*)malloc(MAX_WORDS * sizeof(String));
     for (int i = 0; i < MAX_WORDS; i++)
     {
-        strcpy(string_array[i].word, "");
+      strcpy(h_string_array[i].word, "");
     }
     
     // device arrays
@@ -51,14 +93,27 @@ int main(int argc, char** argv)
     fileToArray(add_fp, h_string_array);
     
     // allocate device arrays
-    checkCudaErrors(cudaMalloc((void **) &d_string_array, 15*sizeof(String)));
-    checkCudaErrors(cudaMemcpy(d_string_array, h_string_array, 15*sizeof(String), cudaMemcpyHostToDevice));
-    checkCudaErrors(cudaMalloc((void **) &d_bf_array, 15*sizeof(String)));
-    checkCudaErrors(cudaMemcpy(d_bf_array, h_bf_array, 15*sizeof(String), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMalloc((void **) &d_string_array, MAX_WORDS*sizeof(String)));
+    checkCudaErrors(cudaMemcpy(d_string_array, h_string_array, MAX_WORDS*sizeof(String), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMalloc((void **) &d_bf_array, M_NUM_BITS*sizeof(unsigned char)));
+    checkCudaErrors(cudaMemcpy(d_bf_array, h_bf_array, M_NUM_BITS*sizeof(unsigned char), cudaMemcpyHostToDevice));
+
+    // set dimensions of blocks and grid
+    //dim3 dimGrid(ceil(MAX_WORDS/32), 1, 1);
+    //dim3 dimBlock(32, 1, 1);
     
+    addToBloom<<<16, 32>>>((unsigned char*)d_bf_array, (String*)d_string_array);
+
+    checkCudaErrors(cudaMemcpy(h_bf_array, d_bf_array, M_NUM_BITS*sizeof(unsigned char), cudaMemcpyDeviceToHost));
+    
+    for (int i = 0; i < M_NUM_BITS; i++) {
+      printf("%d\n", h_bf_array[i]);
+    }
+    
+    cudaFree(d_bf_array);
     cudaFree(d_string_array);
 
-    free(h_bloom_filter_array);
+    free(h_bf_array);
     free(h_string_array);
 
     return 0;
