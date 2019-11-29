@@ -9,7 +9,7 @@
 #include <helper_cuda.h>
 #include "bloom.h"
 
-__device__ unsigned long hashstring(char *word)
+__device__ unsigned long cuda_hashstring(char *word)
 {
   unsigned char *str = (unsigned char *)word;
   unsigned long hash = HASH_NUM;
@@ -23,9 +23,9 @@ __device__ unsigned long hashstring(char *word)
 }
 
 
-__device__ void hash(long *hashes, char *word)
+__device__ void cuda_hash(long *hashes, char *word)
 {
-  unsigned long x = hashstring(word);
+  unsigned long x = cuda_hashstring(word);
   unsigned long y = x >> 4;
 
   for (int i = 0; i < K_NUM_HASH; i++)
@@ -39,7 +39,7 @@ __device__ void hash(long *hashes, char *word)
 __device__ void mapToBloom(unsigned char *filter, char *word)
 {
   long hashes[K_NUM_HASH];
-  hash(hashes, word);
+  cuda_hash(hashes, word);
 
   for (int i = 0; i < K_NUM_HASH; i++)
     {
@@ -106,7 +106,7 @@ int main(int argc, char** argv)
 
     checkCudaErrors(cudaMemcpy(h_bf_array, d_bf_array, M_NUM_BITS*sizeof(unsigned char), cudaMemcpyDeviceToHost));
     
-    checkWordsFromFile(check_fp, bloom_filter_array);
+    checkWordsFromFile(check_fp, h_bf_array);
     
     cudaFree(d_bf_array);
     cudaFree(d_string_array);
