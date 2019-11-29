@@ -22,7 +22,11 @@ int main(int argc, char** argv)
 
     // host arrays
     unsigned char *h_bf_array = (unsigned char*)calloc(M_NUM_BITS, sizeof(unsigned char));
-    String *h_string_array = (String*)malloc(15 * sizeof(String));
+    String *h_string_array = (String*)malloc(MAX_WORDS * sizeof(String));
+    for (int i = 0; i < MAX_WORDS; i++)
+    {
+        strcpy(string_array[i].word, "");
+    }
     
     // device arrays
     unsigned char *d_bf_array;
