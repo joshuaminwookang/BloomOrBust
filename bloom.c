@@ -118,10 +118,10 @@ void addWordsFromArray(String *words, unsigned char *filter)
 {
     for (int i = 0; i < MAX_WORDS; i++)
     {
+
+        // check if there are no more words
         if (!strcmp(words[i].word, ""))
-        {
             return;
-        }
 
         mapToBloom(filter, words[i].word);
     }
@@ -145,8 +145,6 @@ int main(int argc, char **argv)
     {
         strcpy(string_array[i].word, "");
     }
-
-    printf("Made it here\n");
 
     // open files
     FILE *add_fp = fopen(argv[1], "r");
