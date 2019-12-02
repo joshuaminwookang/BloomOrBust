@@ -108,7 +108,7 @@ int main(int argc, char **argv)
     printf("Time to add to BF: %f ms\n", cpu_time_used);
 
     // check if words in file 2 are in Bloom filter
-    checkWordsFromFile(check_fp, bloom_filter_array);
+    printf("Misses: %d\n", countMissFromFile(check_fp, bloom_filter_array));
 
     free(bloom_filter_array);
     free(string_array);
