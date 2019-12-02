@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define BUF_SIZE 50     // max size of word
+#define BUF_SIZE 100     // max size of word
 #define M_NUM_BITS 20000 // number of elements in Bloom filter
 #define K_NUM_HASH 5    // number of hash functions
 #define HASH_NUM 5381   // number used for hash function
@@ -95,11 +95,11 @@ int fileToArray(FILE *fp, String **words)
     rewind(fp);
 
     int i = 0;
-    while (fscanf(fp, "%s", buffer) == 1)
+    while (fscanf(fp, "%s", buffer) != EOF)
     {
         removePunct(buffer);
         strcpy((*words)[i++].word, buffer);
-        
+
         if (i >= size-1) {
             size = size * 2;
             *words = realloc(*words, size);
