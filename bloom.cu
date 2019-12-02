@@ -36,6 +36,7 @@ __device__ void cuda_hash(long *hashes, char *word)
     }
 }
 
+
 __device__ void mapToBloom(unsigned char *filter, char *word)
 {
   long hashes[K_NUM_HASH];
@@ -46,6 +47,7 @@ __device__ void mapToBloom(unsigned char *filter, char *word)
       filter[hashes[i]] = 1;
     }
 }
+
 
 __global__ void addToBloom(unsigned char *bf_array, String *words) 
 {

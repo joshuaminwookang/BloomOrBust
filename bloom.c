@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <time.h>
 #include "bloom.h"
 
 /*
@@ -89,9 +90,22 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+    // measure time
+    clock_t start, end;
+    double cpu_time_used;
+
     // add words from file 1
     fileToArray(add_fp, string_array);
+
+    printf("Test\n");
+
+    start = clock();
     addWordsFromArray(string_array, bloom_filter_array);
+    end = clock();
+
+    cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
+
+    printf("Time to add to BF: %f ms\n", cpu_time_used);
 
     // check if words in file 2 are in Bloom filter
     checkWordsFromFile(check_fp, bloom_filter_array);

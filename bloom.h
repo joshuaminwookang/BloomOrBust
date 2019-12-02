@@ -1,5 +1,8 @@
 /*
- * Bloom filter Header.
+ * Bloom filter Header. 
+ * 
+ * Contains functions to be used by both parallel
+ * and sequential implementations of the Bloom filter.
  *
  * (c) 2019 Josh Kang and Andrew Thai
  */
@@ -7,16 +10,17 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define BUF_SIZE 100    // max size of word
-#define M_NUM_BITS 1000 // number of elements in Bloom filter
+#define BUF_SIZE 50     // max size of word
+#define M_NUM_BITS 2000 // number of elements in Bloom filter
 #define K_NUM_HASH 5    // number of hash functions
 #define HASH_NUM 5381   // number used for hash function
-#define MAX_WORDS 500
+#define MAX_WORDS 1024
 
 typedef struct String
 {
     char word[BUF_SIZE];
 } String;
+
 
 /*
  * Hash function for a string using Horner's Rule.
@@ -78,18 +82,22 @@ void removePunct(char *str)
 }
 
 /*
- * Reads words from file into array
+ * Reads words from file into array.
+ * 
+ * Returns the number of words read in.
  */
-void fileToArray(FILE *fp, String *words)
+int fileToArray(FILE *fp, String *words)
 {
     char buffer[BUF_SIZE];
 
     int i = 0;
-    while (fscanf(fp, "%s", buffer) == 1)
+    while (fscanf(fp, "%s", buffer) == 1 && i < MAX_WORDS)
     {
         removePunct(buffer);
         strcpy(words[i++].word, buffer);
     }
+
+    return i;
 }
 
 /*
@@ -127,4 +135,26 @@ void checkWordsFromFile(FILE *fp, unsigned char *filter)
         removePunct(buffer);
         printf("%d: %s\n", checkBloom(filter, buffer), buffer);
     }
+}
+
+/*
+ * Counts the number of words missing in a file.
+ * 
+ * Returns that count.
+ */
+int countMissFromFile(FILE *fp, unsigned char *filter)
+{
+    char buffer[BUF_SIZE];
+    int count = 0;
+
+    while (fscanf(fp, "%s", buffer) == 1)
+    {
+        removePunct(buffer);
+
+        if (!checkBloom(filter, buffer)) {
+            count++;
+        }
+    }
+
+    return count;
 }
