@@ -43,9 +43,9 @@ void addWordsFromFile(FILE *fp, unsigned char *filter)
 /*
  * Reads words from array and adds them to Bloom filter.
  */
-void addWordsFromArray(String *words, unsigned char *filter)
+void addWordsFromArray(String *words, int num,  unsigned char *filter)
 {
-    for (int i = 0; i < MAX_WORDS; i++)
+    for (int i = 0; i < num; i++)
     {
 
         // check if there are no more words
@@ -69,8 +69,8 @@ int main(int argc, char **argv)
     unsigned char *bloom_filter_array = calloc(M_NUM_BITS, sizeof(unsigned char));
 
     // initialize array of Strings
-    String *string_array = (String *)malloc(MAX_WORDS * sizeof(String));
-    for (int i = 0; i < MAX_WORDS; i++)
+    String *string_array = (String *)malloc(INIT_WORDS * sizeof(String));
+    for (int i = 0; i < INIT_WORDS; i++)
     {
         strcpy(string_array[i].word, "");
     }
@@ -94,13 +94,15 @@ int main(int argc, char **argv)
     clock_t start, end;
     double cpu_time_used;
 
-    // add words from file 1
-    fileToArray(add_fp, string_array);
+    printf("Made it here\n");
 
-    printf("Test\n");
+    // add words from file 1
+    int num_words = fileToArray(add_fp, &string_array);
+
+    printf("%d\n", num_words);
 
     start = clock();
-    addWordsFromArray(string_array, bloom_filter_array);
+    addWordsFromArray(string_array, num_words, bloom_filter_array);
     end = clock();
 
     cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;

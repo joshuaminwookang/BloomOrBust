@@ -66,8 +66,8 @@ int main(int argc, char** argv)
 
     // host arrays
     unsigned char *h_bf_array = (unsigned char*)calloc(M_NUM_BITS, sizeof(unsigned char));
-    String *h_string_array = (String*)malloc(MAX_WORDS * sizeof(String));
-    for (int i = 0; i < MAX_WORDS; i++)
+    String *h_string_array = (String*)malloc(INIT_WORDS * sizeof(String));
+    for (int i = 0; i < INIT_WORDS; i++)
     {
       strcpy(h_string_array[i].word, "");
     }
@@ -95,13 +95,13 @@ int main(int argc, char** argv)
     fileToArray(add_fp, h_string_array);
     
     // allocate device arrays
-    checkCudaErrors(cudaMalloc((void **) &d_string_array, MAX_WORDS*sizeof(String)));
-    checkCudaErrors(cudaMemcpy(d_string_array, h_string_array, MAX_WORDS*sizeof(String), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMalloc((void **) &d_string_array, INIT_WORDS*sizeof(String)));
+    checkCudaErrors(cudaMemcpy(d_string_array, h_string_array, INIT_WORDS*sizeof(String), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMalloc((void **) &d_bf_array, M_NUM_BITS*sizeof(unsigned char)));
     checkCudaErrors(cudaMemcpy(d_bf_array, h_bf_array, M_NUM_BITS*sizeof(unsigned char), cudaMemcpyHostToDevice));
 
     // set dimensions of blocks and grid
-    //dim3 dimGrid(ceil(MAX_WORDS/32), 1, 1);
+    //dim3 dimGrid(ceil(INIT_WORDS/32), 1, 1);
     //dim3 dimBlock(32, 1, 1);
     
     addToBloom<<<16, 32>>>((unsigned char*)d_bf_array, (String*)d_string_array);
