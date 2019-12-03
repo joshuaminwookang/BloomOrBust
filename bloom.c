@@ -79,14 +79,14 @@ int main(int argc, char **argv)
     FILE *add_fp = fopen(argv[1], "r");
     if (add_fp == NULL)
     {
-        printf("Failed to open file1. \n");
+        printf("Failed to open %s. \n", argv[1]);
         exit(1);
     }
 
     FILE *check_fp = fopen(argv[2], "r");
     if (check_fp == NULL)
     {
-        printf("Failed to open file2. \n");
+        printf("Failed to open %s. \n", argv[2]);
         exit(1);
     }
 
