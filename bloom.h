@@ -10,12 +10,12 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define BUF_SIZE 100     // max size of word
+#define BUF_SIZE 90     // max size of word
 #define M_NUM_BITS 20000 // number of elements in Bloom filter
 #define K_NUM_HASH 5    // number of hash functions
 #define HASH_NUM 5381   // number used for hash function
 #define INIT_WORDS 512
-#define MAX_WORDS 16384
+#define MAX_WORDS 32768
 
 typedef struct String
 {
@@ -95,13 +95,16 @@ int fileToArray(FILE *fp, String **words)
     rewind(fp);
 
     int i = 0;
-    while (fscanf(fp, "%s", buffer) != EOF)
+    while (fscanf(fp, "%s", buffer) != EOF && i < MAX_WORDS)
     {
         removePunct(buffer);
         strcpy((*words)[i++].word, buffer);
 
         if (i >= size-1) {
             size = size * 2;
+
+            if (size > MAX_WORDS) size = MAX_WORDS;
+
             *words = realloc(*words, size);
             printf("Reallocated to size %d \n", size);
         }
@@ -143,6 +146,8 @@ void checkWordsFromFile(FILE *fp, unsigned char *filter)
 {
     char buffer[BUF_SIZE];
 
+    rewind(fp);
+
     while (fscanf(fp, "%s", buffer) == 1)
     {
         removePunct(buffer);
@@ -160,6 +165,8 @@ int countMissFromFile(FILE *fp, unsigned char *filter)
     char buffer[BUF_SIZE];
     int count = 0;
 
+    rewind(fp);
+
     while (fscanf(fp, "%s", buffer) == 1)
     {
         removePunct(buffer);
@@ -170,4 +177,11 @@ int countMissFromFile(FILE *fp, unsigned char *filter)
     }
 
     return count;
+}
+
+void printFilter(unsigned char *filter) {
+    for (int i = 0; i < M_NUM_BITS; i++) {
+        printf("%d", filter[i]);
+    }
+    printf("\n");
 }

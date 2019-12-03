@@ -33,6 +33,8 @@ void addWordsFromFile(FILE *fp, unsigned char *filter)
 {
     char buffer[BUF_SIZE];
 
+    rewind(fp);
+
     while (fscanf(fp, "%s", buffer) == 1)
     {
         removePunct(buffer);
@@ -47,11 +49,6 @@ void addWordsFromArray(String *words, int num,  unsigned char *filter)
 {
     for (int i = 0; i < num; i++)
     {
-
-        // check if there are no more words
-        if (!strcmp(words[i].word, ""))
-            return;
-
         mapToBloom(filter, words[i].word);
     }
 }
@@ -94,8 +91,6 @@ int main(int argc, char **argv)
     clock_t start, end;
     double cpu_time_used;
 
-    printf("Made it here\n");
-
     // add words from file 1
     int num_words = fileToArray(add_fp, &string_array);
 
@@ -111,6 +106,8 @@ int main(int argc, char **argv)
 
     // check if words in file 2 are in Bloom filter
     printf("Misses: %d\n", countMissFromFile(check_fp, bloom_filter_array));
+
+    //printFilter(bloom_filter_array);
 
     free(bloom_filter_array);
     free(string_array);
