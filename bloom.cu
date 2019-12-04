@@ -92,7 +92,7 @@ int main(int argc, char** argv)
     }    
     
     // read in file1
-    fileToArray(add_fp, h_string_array);
+    fileToArray(add_fp, &h_string_array);
     
     // allocate device arrays
     checkCudaErrors(cudaMalloc((void **) &d_string_array, INIT_WORDS*sizeof(String)));

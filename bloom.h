@@ -15,7 +15,7 @@
 #define K_NUM_HASH 5    // number of hash functions
 #define HASH_NUM 5381   // number used for hash function
 #define INIT_WORDS 512
-#define MAX_WORDS 32768
+#define MAX_WORDS 10000
 
 typedef struct String
 {
@@ -100,12 +100,16 @@ int fileToArray(FILE *fp, String **words)
         removePunct(buffer);
         strcpy((*words)[i++].word, buffer);
 
-        if (i >= size-1) {
+        if (i >= size) {
             size = size * 2;
 
-            if (size > MAX_WORDS) size = MAX_WORDS;
+            if (size > MAX_WORDS) {
+	      size = MAX_WORDS;
+	      *words = (String *)realloc(*words, size);
+	      return i;
+	    }
 
-            *words = realloc(*words, size);
+            *words = (String *)realloc(*words, size);
             printf("Reallocated to size %d \n", size);
         }
     }
