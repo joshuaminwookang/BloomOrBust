@@ -303,3 +303,6 @@ clean:
 	rm -rf ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)/$(build)
 
 clobber: clean
+
+love:
+	@echo "Not war."
