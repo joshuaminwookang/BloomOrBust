@@ -10,12 +10,12 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define BUF_SIZE 90     // max size of word
+#define BUF_SIZE 100     // max size of word
 #define M_NUM_BITS 20000 // number of elements in Bloom filter
 #define K_NUM_HASH 5    // number of hash functions
 #define HASH_NUM 5381   // number used for hash function
 #define INIT_WORDS 512
-#define MAX_WORDS 10000
+#define MAX_WORDS 
 
 typedef struct String
 {
@@ -95,7 +95,7 @@ int fileToArray(FILE *fp, String **words)
     rewind(fp);
 
     int i = 0;
-    while (fscanf(fp, "%s", buffer) != EOF && i < MAX_WORDS)
+    while (fscanf(fp, "%s", buffer) != EOF)
     {
         removePunct(buffer);
         strcpy((*words)[i++].word, buffer);
@@ -103,13 +103,13 @@ int fileToArray(FILE *fp, String **words)
         if (i >= size) {
             size = size * 2;
 
-            if (size > MAX_WORDS) {
-	      size = MAX_WORDS;
-	      *words = (String *)realloc(*words, size);
-	      return i;
-	    }
+            //if (size > MAX_WORDS) {
+	        //    size = MAX_WORDS;
+	        //    *words = (String *)realloc(*words, size);
+	        //    return i;
+	        //}
 
-            *words = (String *)realloc(*words, size);
+            *words = (String *)realloc(*words, size * sizeof(String));
             printf("Reallocated to size %d \n", size);
         }
     }

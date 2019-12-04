@@ -87,7 +87,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    // measure time
+    // measure time 
     clock_t start, end;
     double cpu_time_used;
 
