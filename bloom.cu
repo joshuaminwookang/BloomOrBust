@@ -9,6 +9,8 @@
 #include <helper_cuda.h>
 #include "bloom.h"
 
+#define BLOCK_SIZE 64.0
+
 __device__ unsigned long cuda_hashstring(char *word)
 {
   unsigned char *str = (unsigned char *)word;
@@ -107,12 +109,12 @@ int main(int argc, char** argv)
     checkCudaErrors(cudaMemcpy(d_bf_array, h_bf_array, M_NUM_BITS*sizeof(unsigned char), cudaMemcpyHostToDevice));
 
     // set dimensions of blocks and grid
-    //dim3 dimGrid(ceil(INIT_WORDS/32), 1, 1);
-    //dim3 dimBlock(32, 1, 1);
+    //dim3 dimGrid(ceil(INIT_WORDS/BLOCK_SIZE), 1, 1);
+    //dim3 dimBlock(BLOCK_SIZE, 1, 1);
 
     checkCudaErrors(cudaEventRecord(start));
     
-    addToBloom<<<ceil(num_words/32.0), 32>>>((unsigned char*)d_bf_array, (String*)d_string_array);
+    addToBloom<<<ceil(num_words/BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char*)d_bf_array, (String*)d_string_array);
 
     checkCudaErrors(cudaEventRecord(stop));
     
