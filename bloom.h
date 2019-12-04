@@ -103,14 +103,8 @@ int fileToArray(FILE *fp, String **words)
         if (i >= size) {
             size = size * 2;
 
-            //if (size > MAX_WORDS) {
-	        //    size = MAX_WORDS;
-	        //    *words = (String *)realloc(*words, size);
-	        //    return i;
-	        //}
-
             *words = (String *)realloc(*words, size * sizeof(String));
-            printf("Reallocated to size %d \n", size);
+
         }
     }
 

@@ -1,4 +1,4 @@
-/*
+/* 
  * Bloom filter with CUDA.
  *
  * (c) 2019 Josh Kang and Andrew Thai
@@ -76,6 +76,10 @@ int main(int argc, char** argv)
     unsigned char *d_bf_array;
     String *d_string_array;
 
+    cudaEvent_t start, stop;
+    checkCudaErrors(cudaEventCreate(&start));
+    checkCudaErrors(cudaEventCreate(&stop));
+    
     // open files
     FILE *add_fp = fopen(argv[1], "r");
     if (add_fp == NULL)
@@ -92,23 +96,38 @@ int main(int argc, char** argv)
     }    
     
     // read in file1
-    fileToArray(add_fp, &h_string_array);
+    int num_words = fileToArray(add_fp, &h_string_array);
+
+    printf("Number of words read: %d\n", num_words);
     
     // allocate device arrays
-    checkCudaErrors(cudaMalloc((void **) &d_string_array, INIT_WORDS*sizeof(String)));
-    checkCudaErrors(cudaMemcpy(d_string_array, h_string_array, INIT_WORDS*sizeof(String), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMalloc((void **) &d_string_array, num_words*sizeof(String)));
+    checkCudaErrors(cudaMemcpy(d_string_array, h_string_array, num_words*sizeof(String), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMalloc((void **) &d_bf_array, M_NUM_BITS*sizeof(unsigned char)));
     checkCudaErrors(cudaMemcpy(d_bf_array, h_bf_array, M_NUM_BITS*sizeof(unsigned char), cudaMemcpyHostToDevice));
 
     // set dimensions of blocks and grid
     //dim3 dimGrid(ceil(INIT_WORDS/32), 1, 1);
     //dim3 dimBlock(32, 1, 1);
+
+    checkCudaErrors(cudaEventRecord(start));
     
-    addToBloom<<<16, 32>>>((unsigned char*)d_bf_array, (String*)d_string_array);
+    addToBloom<<<ceil(num_words/32.0), 32>>>((unsigned char*)d_bf_array, (String*)d_string_array);
+
+    checkCudaErrors(cudaEventRecord(stop));
+    
+    checkCudaErrors(cudaEventSynchronize(stop));
+    
+    float milliseconds = 0;
+    checkCudaErrors(cudaEventElapsedTime(&milliseconds, start, stop));
 
     checkCudaErrors(cudaMemcpy(h_bf_array, d_bf_array, M_NUM_BITS*sizeof(unsigned char), cudaMemcpyDeviceToHost));
-    
-    checkWordsFromFile(check_fp, h_bf_array);
+
+    printf("Took %f ms\n", milliseconds);
+    printf("Misses: %d\n", countMissFromFile(check_fp, h_bf_array));
+
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
     
     cudaFree(d_bf_array);
     cudaFree(d_string_array);
