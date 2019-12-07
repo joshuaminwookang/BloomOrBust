@@ -22,6 +22,38 @@ typedef struct String
     char word[BUF_SIZE];
 } String;
 
+/*      METHODS IN THIS HEADER       */
+
+// return a hash value for String
+unsigned long hashstring(char *word);
+
+// generate a list of hash values for a word
+void hash(long *hashes, char *word);
+
+// remove punctuation from a string
+void removePunct(char *str);
+
+// read words from file into an array
+int fileToArray(FILE *fp, String **words);
+
+// check if BF contains the given word
+int checkBloom(unsigned char *filter, char *word);
+
+// check if words in the file are in the BF
+void checkWordsFromFile(FILE *fp, unsigned char *filter);
+
+// count the number of misses
+int countMissFromFile(FILE *fp, unsigned char *filter);
+
+// print entire BF
+void printFilter(unsigned char *filter);
+
+// print run time info
+void printInfo(int words_added, int words_check, 
+               double add_time, double check_time, int misses);
+
+
+/*   Functions used in Sequential and CUDA implementations   */
 
 /*
  * Hash function for a string using Horner's Rule.
@@ -177,9 +209,27 @@ int countMissFromFile(FILE *fp, unsigned char *filter)
     return count;
 }
 
-void printFilter(unsigned char *filter) {
+/*
+ * Prints out contents of Bloom filter.
+ */
+void printFilter(unsigned char *filter) 
+{
     for (int i = 0; i < M_NUM_BITS; i++) {
         printf("%d", filter[i]);
     }
     printf("\n");
+}
+
+/*
+ * Prints run time info.
+ */
+void printInfo(int words_added, int words_check, 
+               double add_time, double check_time, int misses) {
+    
+    printf("Words to add: %d\n", words_added);
+    printf("Words to check: %d\n", words_check);
+    printf("Time to add: %f\n", add_time);
+    printf("Time to check: %f\n", check_time);
+    printf("Total Misses: %d\n", misses);
+
 }

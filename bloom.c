@@ -53,6 +53,20 @@ void addWordsFromArray(String *words, int num,  unsigned char *filter)
     }
 }
 
+int countMissFromArray(String *words, int num,  unsigned char *filter) {
+    
+    int count = 0;
+
+    for (int i = 0; i < num; i++)
+    {
+        if (!checkBloom(filter, words[i].word)) {
+            count++;
+        }
+    }
+
+    return count;
+}
+
 int main(int argc, char **argv)
 {
 
@@ -65,12 +79,10 @@ int main(int argc, char **argv)
     // initialize bloom filter array
     unsigned char *bloom_filter_array = calloc(M_NUM_BITS, sizeof(unsigned char));
 
-    // initialize array of Strings
-    String *string_array = (String *)malloc(INIT_WORDS * sizeof(String));
-    for (int i = 0; i < INIT_WORDS; i++)
-    {
-        strcpy(string_array[i].word, "");
-    }
+    // initialize arrays of Strings
+    String *add_array = (String *)malloc(INIT_WORDS * sizeof(String));
+    String *check_array = (String *)malloc(INIT_WORDS * sizeof(String));
+    
 
     // open files
     FILE *add_fp = fopen(argv[1], "r");
@@ -89,28 +101,32 @@ int main(int argc, char **argv)
 
     // measure time 
     clock_t start, end;
-    double cpu_time_used;
+    double add_time, check_time;
 
-    // add words from file 1
-    int num_words = fileToArray(add_fp, &string_array);
+    // add words from files
+    int num_words_added = fileToArray(add_fp, &add_array);
+    int num_words_check = fileToArray(check_fp, &check_array);
 
-    printf("%d\n", num_words);
+    int misses;
 
+    // add words to Bloom filter
     start = clock();
-    addWordsFromArray(string_array, num_words, bloom_filter_array);
+    addWordsFromArray(add_array, num_words_added, bloom_filter_array);
     end = clock();
-
-    cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
-
-    printf("Time to add to BF: %f ms\n", cpu_time_used);
+    add_time = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
 
     // check if words in file 2 are in Bloom filter
-    printf("Misses: %d\n", countMissFromFile(check_fp, bloom_filter_array));
+    start = clock();
+    misses = countMissFromArray(check_array, num_words_check, bloom_filter_array);
+    end = clock();
+    check_time = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
 
-    //printFilter(bloom_filter_array);
+    // print out info
+    printInfo(num_words_added, num_words_check, add_time, check_time, misses);
 
     free(bloom_filter_array);
-    free(string_array);
+    free(add_array);
+    free(check_array);
 
     return 0;
 }

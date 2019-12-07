@@ -98,13 +98,14 @@ int main(int argc, char** argv)
     }    
     
     // read in file1
-    int num_words = fileToArray(add_fp, &h_string_array);
+    int num_words_added = fileToArray(add_fp, &h_string_array);
 
-    printf("Number of words read: %d\n", num_words);
+    int misses;
+
     
     // allocate device arrays
-    checkCudaErrors(cudaMalloc((void **) &d_string_array, num_words*sizeof(String)));
-    checkCudaErrors(cudaMemcpy(d_string_array, h_string_array, num_words*sizeof(String), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMalloc((void **) &d_string_array, num_words_added*sizeof(String)));
+    checkCudaErrors(cudaMemcpy(d_string_array, h_string_array, num_words_added*sizeof(String), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMalloc((void **) &d_bf_array, M_NUM_BITS*sizeof(unsigned char)));
     checkCudaErrors(cudaMemcpy(d_bf_array, h_bf_array, M_NUM_BITS*sizeof(unsigned char), cudaMemcpyHostToDevice));
 
@@ -125,15 +126,15 @@ int main(int argc, char** argv)
 
     checkCudaErrors(cudaMemcpy(h_bf_array, d_bf_array, M_NUM_BITS*sizeof(unsigned char), cudaMemcpyDeviceToHost));
 
-    printf("Took %f ms\n", milliseconds);
-    printf("Misses: %d\n", countMissFromFile(check_fp, h_bf_array));
+    misses = countMissFromFile(check_fp, h_bf_array);
 
+    printInfo(num_words_added, -1, milliseconds, -1, misses);
+
+    // cleanup
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-    
     cudaFree(d_bf_array);
     cudaFree(d_string_array);
-
     free(h_bf_array);
     free(h_string_array);
 
