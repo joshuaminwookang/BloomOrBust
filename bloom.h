@@ -36,11 +36,11 @@ void removePunct(char *str);
 // read words from file into an array
 int fileToArray(FILE *fp, String **words);
 
-// check if BF contains the given word
-int checkBloom(unsigned char *filter, char *word);
+// test if BF contains the given word
+int testBloom(unsigned char *filter, char *word);
 
-// check if words in the file are in the BF
-void checkWordsFromFile(FILE *fp, unsigned char *filter);
+// test if words in the file are in the BF
+void testWordsFromFile(FILE *fp, unsigned char *filter);
 
 // count the number of misses
 int countMissFromFile(FILE *fp, unsigned char *filter);
@@ -49,8 +49,8 @@ int countMissFromFile(FILE *fp, unsigned char *filter);
 void printFilter(unsigned char *filter);
 
 // print run time info
-void printInfo(int words_added, int words_check,
-               double add_time, double check_time, int misses);
+void printInfo(int words_mapped, int words_test,
+               double map_time, double test_time, int misses);
 
 /*   Functions used in Sequential and CUDA implementations   */
 
@@ -76,7 +76,7 @@ unsigned long hashstring(char *word)
 /* 
  * Hash function: Finds indicies that a word maps to.
  * @params long[] hashes is the array of indices 
- * @params char* word is the word we want to add
+ * @params char* word is the word we want to map
  */
 void hash(long *hashes, char *word)
 {
@@ -85,8 +85,8 @@ void hash(long *hashes, char *word)
 
     for (int i = 0; i < K_NUM_HASH; i++)
     {
-        x = (x + y) % M_NUM_BITS;
-        y = (y + i) % M_NUM_BITS;
+        x = (x + y) % M_NUM_BITS; // ith hash value
+        y = (y + i) % M_NUM_BITS; // displacement
         hashes[i] = x;
     }
 }
@@ -145,13 +145,13 @@ int fileToArray(FILE *fp, String **words)
 }
 
 /*
- * Checks if word is in bloom filter.
+ * tests if word is in bloom filter.
  * Tests if there is a 1 in filter at indices 
  * that given word maps to.
  *
  * Returns 1 if search is positive, 0 if negative.
  */
-int checkBloom(unsigned char *filter, char *word)
+int testBloom(unsigned char *filter, char *word)
 {
     long *hashes = (long *)calloc(K_NUM_HASH, sizeof(long));
     hash(hashes, word);
@@ -171,9 +171,9 @@ int checkBloom(unsigned char *filter, char *word)
 }
 
 /*
- * Checks if words from file are in Bloom filter.
+ * tests if words from file are in Bloom filter.
  */
-void checkWordsFromFile(FILE *fp, unsigned char *filter)
+void testWordsFromFile(FILE *fp, unsigned char *filter)
 {
     char buffer[BUF_SIZE];
 
@@ -182,7 +182,7 @@ void checkWordsFromFile(FILE *fp, unsigned char *filter)
     while (fscanf(fp, "%s", buffer) == 1)
     {
         removePunct(buffer);
-        printf("%d: %s\n", checkBloom(filter, buffer), buffer);
+        printf("%d: %s\n", testBloom(filter, buffer), buffer);
     }
 }
 
@@ -202,7 +202,7 @@ int countMissFromFile(FILE *fp, unsigned char *filter)
     {
         removePunct(buffer);
 
-        if (!checkBloom(filter, buffer))
+        if (!testBloom(filter, buffer))
         {
             count++;
         }
@@ -226,13 +226,13 @@ void printFilter(unsigned char *filter)
 /*
  * Prints run time info.
  */
-void printInfo(int words_added, int words_check,
-               double add_time, double check_time, int misses)
+void printInfo(int words_mapped, int words_test,
+               double map_time, double test_time, int misses)
 {
 
-    printf("Words to add: %d\n", words_added);
-    printf("Words to check: %d\n", words_check);
-    printf("Time to add: %f\n", add_time);
-    printf("Time to check: %f\n", check_time);
+    printf("Words to map: %d\n", words_mapped);
+    printf("Words to test: %d\n", words_test);
+    printf("Time to map: %f\n", map_time);
+    printf("Time to test: %f\n", test_time);
     printf("Total Misses: %d\n", misses);
 }

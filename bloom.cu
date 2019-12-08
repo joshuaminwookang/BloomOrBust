@@ -43,7 +43,7 @@ __device__ void cuda_hash(long *hashes, char *word)
   }
 }
 
-__device__ int cuda_checkBloom(unsigned char *filter, char *word)
+__device__ int cuda_testBloom(unsigned char *filter, char *word)
 {
   long hashes[K_NUM_HASH];
   cuda_hash(hashes, word);
@@ -65,7 +65,7 @@ __global__ void cuda_countMisses(unsigned char *filter, String *words, int *coun
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   if (index < num_words)
   {
-    int miss = cuda_checkBloom(filter, words[index].word);
+    int miss = cuda_testBloom(filter, words[index].word);
     atomicAdd(count, miss);
   }
 }
@@ -84,7 +84,7 @@ __device__ void cuda_mapToBloom(unsigned char *filter, char *word)
   }
 }
 
-__global__ void cuda_addToBloom(unsigned char *bf_array, String *words, int num_words)
+__global__ void cuda_mapToBloom(unsigned char *bf_array, String *words, int num_words)
 {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   if (index < num_words)
@@ -98,14 +98,14 @@ int main(int argc, char **argv)
 
   if (argc != 3)
   {
-    printf("Usage: ./bloom WordsToAdd WordsToCheck\n");
+    printf("Usage: ./bloom WordsToMap WordsTotest\n");
     exit(1);
   }
 
   // host data
   unsigned char *h_bf_array = (unsigned char *)calloc(M_NUM_BITS, sizeof(unsigned char));
   String *h_string_array = (String *)malloc(INIT_WORDS * sizeof(String));
-  String *h_check_array = (String *)malloc(INIT_WORDS * sizeof(String));
+  String *h_test_array = (String *)malloc(INIT_WORDS * sizeof(String));
   int h_misses[1];
   h_misses[0] = 0;
 
@@ -116,94 +116,94 @@ int main(int argc, char **argv)
 
   for (int i = 0; i < INIT_WORDS; i++)
   {
-    strcpy(h_check_array[i].word, "");
+    strcpy(h_test_array[i].word, "");
   }
 
   // device data
   unsigned char *d_bf_array;
   String *d_string_array;
-  String *d_check_array;
+  String *d_test_array;
   int *d_misses;
 
   // time measurement
-  float add_time, check_time = 0;
-  cudaEvent_t start_add, stop_add, start_check, stop_check;
-  checkCudaErrors(cudaEventCreate(&start_add));
-  checkCudaErrors(cudaEventCreate(&stop_add));
-  checkCudaErrors(cudaEventCreate(&start_check));
-  checkCudaErrors(cudaEventCreate(&stop_check));
+  float map_time, test_time = 0;
+  cudaEvent_t start_map, stop_map, start_test, stop_test;
+  checkCudaErrors(cudaEventCreate(&start_map));
+  checkCudaErrors(cudaEventCreate(&stop_map));
+  checkCudaErrors(cudaEventCreate(&start_test));
+  checkCudaErrors(cudaEventCreate(&stop_test));
 
   // open files
-  FILE *add_fp = fopen(argv[1], "r");
-  if (add_fp == NULL)
+  FILE *map_fp = fopen(argv[1], "r");
+  if (map_fp == NULL)
   {
     printf("Failed to open file1. \n");
     exit(1);
   }
 
-  FILE *check_fp = fopen(argv[2], "r");
-  if (check_fp == NULL)
+  FILE *test_fp = fopen(argv[2], "r");
+  if (test_fp == NULL)
   {
     printf("Failed to open file2. \n");
     exit(1);
   }
 
   // read in file1
-  int num_words_added = fileToArray(add_fp, &h_string_array);
-  int num_words_check = fileToArray(check_fp, &h_check_array);
+  int num_words_mapped = fileToArray(map_fp, &h_string_array);
+  int num_words_test = fileToArray(test_fp, &h_test_array);
 
   // allocate device arrays
-  checkCudaErrors(cudaMalloc((void **)&d_string_array, num_words_added * sizeof(String)));
-  checkCudaErrors(cudaMemcpy(d_string_array, h_string_array, num_words_added * sizeof(String), cudaMemcpyHostToDevice));
-  checkCudaErrors(cudaMalloc((void **)&d_check_array, num_words_check * sizeof(String)));
-  checkCudaErrors(cudaMemcpy(d_check_array, h_check_array, num_words_check * sizeof(String), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMalloc((void **)&d_string_array, num_words_mapped * sizeof(String)));
+  checkCudaErrors(cudaMemcpy(d_string_array, h_string_array, num_words_mapped * sizeof(String), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMalloc((void **)&d_test_array, num_words_test * sizeof(String)));
+  checkCudaErrors(cudaMemcpy(d_test_array, h_test_array, num_words_test * sizeof(String), cudaMemcpyHostToDevice));
   checkCudaErrors(cudaMalloc((void **)&d_bf_array, M_NUM_BITS * sizeof(unsigned char)));
   checkCudaErrors(cudaMemcpy(d_bf_array, h_bf_array, M_NUM_BITS * sizeof(unsigned char), cudaMemcpyHostToDevice));
 
-  // add words to Bloom filter
-  checkCudaErrors(cudaEventRecord(start_add));
-  cuda_addToBloom<<<ceil(num_words_added / BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char *)d_bf_array,
+  // map words to Bloom filter
+  checkCudaErrors(cudaEventRecord(start_map));
+  cuda_mapToBloom<<<ceil(num_words_mapped / BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char *)d_bf_array,
                                                                       (String *)d_string_array,
-                                                                      num_words_added);
-  checkCudaErrors(cudaEventRecord(stop_add));
+                                                                      num_words_mapped);
+  checkCudaErrors(cudaEventRecord(stop_map));
 
   // get running time
-  checkCudaErrors(cudaEventSynchronize(stop_add));
-  checkCudaErrors(cudaEventElapsedTime(&add_time, start_add, stop_add));
+  checkCudaErrors(cudaEventSynchronize(stop_map));
+  checkCudaErrors(cudaEventElapsedTime(&map_time, start_map, stop_map));
 
   checkCudaErrors(cudaMalloc((void **)&d_misses, sizeof(int)));
   checkCudaErrors(cudaMemcpy(d_misses, h_misses, sizeof(int), cudaMemcpyHostToDevice));
   checkCudaErrors(cudaMemcpy(h_bf_array, d_bf_array, M_NUM_BITS * sizeof(unsigned char), cudaMemcpyDeviceToHost));
 
-  checkCudaErrors(cudaEventRecord(start_check));
-  cuda_countMisses<<<ceil(num_words_check / BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char *)d_bf_array,
+  checkCudaErrors(cudaEventRecord(start_test));
+  cuda_countMisses<<<ceil(num_words_test / BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char *)d_bf_array,
                                                                        (String *)d_check_array,
-                                                                       (int *)d_misses, num_words_check);
-  checkCudaErrors(cudaEventRecord(stop_check));
-  checkCudaErrors(cudaEventSynchronize(stop_check));
-  checkCudaErrors(cudaEventElapsedTime(&check_time, start_check, stop_check));
+                                                                       (int *)d_misses, num_words_test);
+  checkCudaErrors(cudaEventRecord(stop_test));
+  checkCudaErrors(cudaEventSynchronize(stop_test));
+  checkCudaErrors(cudaEventElapsedTime(&test_time, start_test, stop_test));
 
   // get resulting Bloom filter
   checkCudaErrors(cudaMemcpy(h_bf_array, d_bf_array, M_NUM_BITS * sizeof(unsigned char), cudaMemcpyDeviceToHost));
   checkCudaErrors(cudaMemcpy(h_misses, d_misses, sizeof(int), cudaMemcpyDeviceToHost));
 
-  int miss = countMissFromFile(check_fp, h_bf_array);
+  int miss = countMissFromFile(test_fp, h_bf_array);
 
   // print run time info
-  printInfo(num_words_added, num_words_check, add_time, check_time, *h_misses);
+  printInfo(num_words_mapped, num_words_test, map_time, test_time, *h_misses);
 
   // cleanup
-  cudaEventDestroy(start_add);
-  cudaEventDestroy(stop_add);
-  cudaEventDestroy(start_check);
-  cudaEventDestroy(stop_check);
+  cudaEventDestroy(start_map);
+  cudaEventDestroy(stop_map);
+  cudaEventDestroy(start_test);
+  cudaEventDestroy(stop_test);
   cudaFree(d_bf_array);
   cudaFree(d_string_array);
-  cudaFree(d_check_array);
+  cudaFree(d_test_array);
   cudaFree(d_misses);
   free(h_bf_array);
   free(h_string_array);
-  free(h_check_array);
+  free(h_test_array);
 
   return 0;
 }

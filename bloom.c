@@ -12,7 +12,7 @@
 #include "bloom.h"
 
 /*
- * Add word to bloom filter.
+ * map word to bloom filter.
  * Places 1 in filter at indices that given word maps to.
  */
 void mapToBloom(unsigned char *filter, char *word)
@@ -27,9 +27,9 @@ void mapToBloom(unsigned char *filter, char *word)
 }
 
 /*
- * Reads words from file and adds them to Bloom filter.
+ * Reads words from file and maps them to Bloom filter.
  */
-void addWordsFromFile(FILE *fp, unsigned char *filter)
+void mapWordsFromFile(FILE *fp, unsigned char *filter)
 {
     char buffer[BUF_SIZE];
 
@@ -43,9 +43,9 @@ void addWordsFromFile(FILE *fp, unsigned char *filter)
 }
 
 /*
- * Reads words from array and adds them to Bloom filter.
+ * Reads words from array and maps them to Bloom filter.
  */
-void addWordsFromArray(String *words, int num, unsigned char *filter)
+void mapWordsFromArray(String *words, int num, unsigned char *filter)
 {
     for (int i = 0; i < num; i++)
     {
@@ -60,7 +60,7 @@ int countMissFromArray(String *words, int num, unsigned char *filter)
 
     for (int i = 0; i < num; i++)
     {
-        if (!checkBloom(filter, words[i].word))
+        if (!testBloom(filter, words[i].word))
         {
             count++;
         }
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 
     if (argc != 3)
     {
-        printf("Usage: ./bloom WordsToAdd WordsToCheck\n");
+        printf("Usage: ./bloom WordsToMap WordsToTest\n");
         exit(1);
     }
 
@@ -82,19 +82,19 @@ int main(int argc, char **argv)
     unsigned char *bloom_filter_array = calloc(M_NUM_BITS, sizeof(unsigned char));
 
     // initialize arrays of Strings
-    String *add_array = (String *)malloc(INIT_WORDS * sizeof(String));
-    String *check_array = (String *)malloc(INIT_WORDS * sizeof(String));
+    String *map_array = (String *)malloc(INIT_WORDS * sizeof(String));
+    String *test_array = (String *)malloc(INIT_WORDS * sizeof(String));
 
     // open files
-    FILE *add_fp = fopen(argv[1], "r");
-    if (add_fp == NULL)
+    FILE *map_fp = fopen(argv[1], "r");
+    if (map_fp == NULL)
     {
         printf("Failed to open %s. \n", argv[1]);
         exit(1);
     }
 
-    FILE *check_fp = fopen(argv[2], "r");
-    if (check_fp == NULL)
+    FILE *test_fp = fopen(argv[2], "r");
+    if (test_fp == NULL)
     {
         printf("Failed to open %s. \n", argv[2]);
         exit(1);
@@ -102,32 +102,32 @@ int main(int argc, char **argv)
 
     // measure time
     clock_t start, end;
-    double add_time, check_time;
+    double map_time, test_time;
 
-    // add words from files
-    int num_words_added = fileToArray(add_fp, &add_array);
-    int num_words_check = fileToArray(check_fp, &check_array);
+    // map words from files
+    int num_words_mapped = fileToArray(map_fp, &map_array);
+    int num_words_test = fileToArray(test_fp, &test_array);
 
     int misses;
 
-    // add words to Bloom filter
+    // map words to Bloom filter
     start = clock();
-    addWordsFromArray(add_array, num_words_added, bloom_filter_array);
+    mapWordsFromArray(map_array, num_words_mapped, bloom_filter_array);
     end = clock();
-    add_time = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
+    map_time = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
 
-    // check if words in file 2 are in Bloom filter
+    // test if words in file 2 are in Bloom filter
     start = clock();
-    misses = countMissFromArray(check_array, num_words_check, bloom_filter_array);
+    misses = countMissFromArray(test_array, num_words_test, bloom_filter_array);
     end = clock();
-    check_time = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
+    test_time = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
 
     // print out info
-    printInfo(num_words_added, num_words_check, add_time, check_time, misses);
+    printInfo(num_words_mapped, num_words_test, map_time, test_time, misses);
 
     free(bloom_filter_array);
-    free(add_array);
-    free(check_array);
+    free(map_array);
+    free(test_array);
 
     return 0;
 }
