@@ -11,6 +11,11 @@
 
 #define BLOCK_SIZE 64.0
 
+
+
+/* 
+ * Hash String in CUDA.
+ */
 __device__ unsigned long cuda_hashstring(char *word)
 {
   unsigned char *str = (unsigned char *)word;
@@ -24,7 +29,9 @@ __device__ unsigned long cuda_hashstring(char *word)
   return hash;
 }
 
-
+/*
+ * Hash string to multiple indices in CUDA.
+ */
 __device__ void cuda_hash(long *hashes, char *word)
 {
   unsigned long x = cuda_hashstring(word);
@@ -38,8 +45,38 @@ __device__ void cuda_hash(long *hashes, char *word)
     }
 }
 
+__device__ int cuda_checkBloom(unsigned char *filter, char *word)
+{
+  long hashes[K_NUM_HASH];
+  cuda_hash(hashes, word);
 
-__device__ void mapToBloom(unsigned char *filter, char *word)
+  for (int i = 0; i < K_NUM_HASH; i++)
+    {
+      // miss
+      if (!filter[hashes[i]])
+	{
+	  return 1; // +1 for a miss
+	}
+    }
+
+  return 0;
+}
+
+__global__ void cuda_countMisses(unsigned char *filter, String *words, int *count, int num_words)
+{
+  int index =  blockIdx.x * blockDim.x + threadIdx.x;
+  if (index < num_words)
+    {
+      int miss =  cuda_checkBloom(filter, words[index].word);
+      atomicAdd(count, miss);
+    }
+
+}
+
+/*
+ * Set bits in Bloom filter based on hash values.
+ */
+__device__ void cuda_mapToBloom(unsigned char *filter, char *word)
 {
   long hashes[K_NUM_HASH];
   cuda_hash(hashes, word);
@@ -51,11 +88,16 @@ __device__ void mapToBloom(unsigned char *filter, char *word)
 }
 
 
-__global__ void addToBloom(unsigned char *bf_array, String *words) 
+__global__ void cuda_addToBloom(unsigned char *bf_array, String *words, int num_words) 
 {
   int index =  blockIdx.x * blockDim.x + threadIdx.x;
-  mapToBloom(bf_array, words[index].word);
+  if (index < num_words)
+    {
+      cuda_mapToBloom(bf_array, words[index].word);
+    }
+
 }
+
 
 int main(int argc, char** argv) 
 {
@@ -66,21 +108,36 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    // host arrays
+    // host data
     unsigned char *h_bf_array = (unsigned char*)calloc(M_NUM_BITS, sizeof(unsigned char));
     String *h_string_array = (String*)malloc(INIT_WORDS * sizeof(String));
+    String *h_check_array = (String*)malloc(INIT_WORDS * sizeof(String));
+    int h_misses[1];
+    h_misses[0] = 0;
+
     for (int i = 0; i < INIT_WORDS; i++)
-    {
-      strcpy(h_string_array[i].word, "");
-    }
+      {
+	strcpy(h_string_array[i].word, "");
+      }
+
+    for (int i = 0; i < INIT_WORDS; i++)
+      {
+	strcpy(h_check_array[i].word, "");
+      }
     
-    // device arrays
+    // device data
     unsigned char *d_bf_array;
     String *d_string_array;
+    String *d_check_array;
+    int *d_misses;
 
-    cudaEvent_t start, stop;
-    checkCudaErrors(cudaEventCreate(&start));
-    checkCudaErrors(cudaEventCreate(&stop));
+    // time measurement
+    float add_time, check_time = 0;
+    cudaEvent_t start_add, stop_add, start_check, stop_check;
+    checkCudaErrors(cudaEventCreate(&start_add));
+    checkCudaErrors(cudaEventCreate(&stop_add));
+    checkCudaErrors(cudaEventCreate(&start_check));
+    checkCudaErrors(cudaEventCreate(&stop_check));
     
     // open files
     FILE *add_fp = fopen(argv[1], "r");
@@ -99,40 +156,55 @@ int main(int argc, char** argv)
     
     // read in file1
     int num_words_added = fileToArray(add_fp, &h_string_array);
-
-    int misses;
+    int num_words_check = fileToArray(check_fp, &h_check_array);
 
     
     // allocate device arrays
     checkCudaErrors(cudaMalloc((void **) &d_string_array, num_words_added*sizeof(String)));
     checkCudaErrors(cudaMemcpy(d_string_array, h_string_array, num_words_added*sizeof(String), cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMalloc((void **) &d_check_array, num_words_check*sizeof(String)));
+    checkCudaErrors(cudaMemcpy(d_check_array, h_check_array, num_words_check*sizeof(String), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMalloc((void **) &d_bf_array, M_NUM_BITS*sizeof(unsigned char)));
     checkCudaErrors(cudaMemcpy(d_bf_array, h_bf_array, M_NUM_BITS*sizeof(unsigned char), cudaMemcpyHostToDevice));
 
-    // set dimensions of blocks and grid
-    //dim3 dimGrid(ceil(INIT_WORDS/BLOCK_SIZE), 1, 1);
-    //dim3 dimBlock(BLOCK_SIZE, 1, 1);
+    // add words to Bloom filter
+    checkCudaErrors(cudaEventRecord(start_add));    
+    cuda_addToBloom<<<ceil(num_words_added/BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char*)d_bf_array,
+								      (String*)d_string_array,
+								      num_words_added);
+    checkCudaErrors(cudaEventRecord(stop_add));
 
-    checkCudaErrors(cudaEventRecord(start));
-    
-    addToBloom<<<ceil(num_words/BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char*)d_bf_array, (String*)d_string_array);
+    // get running time
+    checkCudaErrors(cudaEventSynchronize(stop_add));
+    checkCudaErrors(cudaEventElapsedTime(&add_time, start_add, stop_add));
 
-    checkCudaErrors(cudaEventRecord(stop));
     
-    checkCudaErrors(cudaEventSynchronize(stop));
-    
-    float milliseconds = 0;
-    checkCudaErrors(cudaEventElapsedTime(&milliseconds, start, stop));
-
+    checkCudaErrors(cudaMalloc((void **) &d_misses, sizeof(int)));
+    checkCudaErrors(cudaMemcpy(d_misses, h_misses, sizeof(int), cudaMemcpyHostToDevice));
     checkCudaErrors(cudaMemcpy(h_bf_array, d_bf_array, M_NUM_BITS*sizeof(unsigned char), cudaMemcpyDeviceToHost));
 
-    misses = countMissFromFile(check_fp, h_bf_array);
+    checkCudaErrors(cudaEventRecord(start_check));
+    cuda_countMisses<<<ceil(num_words_check/BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char*)d_bf_array,
+								       (String*)d_check_array,
+								       (int *)d_misses, num_words_check);
+    checkCudaErrors(cudaEventRecord(stop_check));
+    checkCudaErrors(cudaEventSynchronize(stop_check));
+    checkCudaErrors(cudaEventElapsedTime(&check_time, start_check, stop_check));
+    
+    // get resulting Bloom filter
+    checkCudaErrors(cudaMemcpy(h_bf_array, d_bf_array, M_NUM_BITS*sizeof(unsigned char), cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMemcpy(h_misses, d_misses, sizeof(int), cudaMemcpyDeviceToHost));
 
-    printInfo(num_words_added, -1, milliseconds, -1, misses);
+    int miss = countMissFromFile(check_fp, h_bf_array);
+    
+    // print run time info
+    printInfo(num_words_added, num_words_check, add_time, check_time, *h_misses);
 
     // cleanup
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
+    cudaEventDestroy(start_add);
+    cudaEventDestroy(stop_add);
+    cudaEventDestroy(start_check);
+    cudaEventDestroy(stop_check);
     cudaFree(d_bf_array);
     cudaFree(d_string_array);
     free(h_bf_array);
