@@ -45,7 +45,7 @@ void addWordsFromFile(FILE *fp, unsigned char *filter)
 /*
  * Reads words from array and adds them to Bloom filter.
  */
-void addWordsFromArray(String *words, int num,  unsigned char *filter)
+void addWordsFromArray(String *words, int num, unsigned char *filter)
 {
     for (int i = 0; i < num; i++)
     {
@@ -53,13 +53,15 @@ void addWordsFromArray(String *words, int num,  unsigned char *filter)
     }
 }
 
-int countMissFromArray(String *words, int num,  unsigned char *filter) {
-    
+int countMissFromArray(String *words, int num, unsigned char *filter)
+{
+
     int count = 0;
 
     for (int i = 0; i < num; i++)
     {
-        if (!checkBloom(filter, words[i].word)) {
+        if (!checkBloom(filter, words[i].word))
+        {
             count++;
         }
     }
@@ -82,7 +84,6 @@ int main(int argc, char **argv)
     // initialize arrays of Strings
     String *add_array = (String *)malloc(INIT_WORDS * sizeof(String));
     String *check_array = (String *)malloc(INIT_WORDS * sizeof(String));
-    
 
     // open files
     FILE *add_fp = fopen(argv[1], "r");
@@ -99,7 +100,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    // measure time 
+    // measure time
     clock_t start, end;
     double add_time, check_time;
 
