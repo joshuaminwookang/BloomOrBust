@@ -199,8 +199,11 @@ int main(int argc, char **argv)
   cudaEventDestroy(stop_check);
   cudaFree(d_bf_array);
   cudaFree(d_string_array);
+  cudaFree(d_check_array);
+  cudaFree(d_misses);
   free(h_bf_array);
   free(h_string_array);
+  free(h_check_array);
 
   return 0;
 }
