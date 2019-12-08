@@ -12,10 +12,10 @@
 
 #define BUF_SIZE 100     // max size of word
 #define M_NUM_BITS 20000 // number of elements in Bloom filter
-#define K_NUM_HASH 5    // number of hash functions
-#define HASH_NUM 5381   // number used for hash function
+#define K_NUM_HASH 5     // number of hash functions
+#define HASH_NUM 5381    // number used for hash function
 #define INIT_WORDS 512
-#define MAX_WORDS 
+#define MAX_WORDS
 
 typedef struct String
 {
@@ -49,9 +49,8 @@ int countMissFromFile(FILE *fp, unsigned char *filter);
 void printFilter(unsigned char *filter);
 
 // print run time info
-void printInfo(int words_added, int words_check, 
+void printInfo(int words_added, int words_check,
                double add_time, double check_time, int misses);
-
 
 /*   Functions used in Sequential and CUDA implementations   */
 
@@ -64,8 +63,10 @@ unsigned long hashstring(char *word)
     unsigned char *str = (unsigned char *)word;
     unsigned long hash = HASH_NUM;
 
+    // while there are still chars in the word
     while (*str)
     {
+        // hash = (hash * 32) + hash + current char in word
         hash = ((hash << 5) + hash) + *(str++);
     }
 
@@ -132,11 +133,11 @@ int fileToArray(FILE *fp, String **words)
         removePunct(buffer);
         strcpy((*words)[i++].word, buffer);
 
-        if (i >= size) {
+        if (i >= size)
+        {
             size = size * 2;
 
             *words = (String *)realloc(*words, size * sizeof(String));
-
         }
     }
 
@@ -200,8 +201,9 @@ int countMissFromFile(FILE *fp, unsigned char *filter)
     while (fscanf(fp, "%s", buffer) == 1)
     {
         removePunct(buffer);
-    
-        if (!checkBloom(filter, buffer)) {
+
+        if (!checkBloom(filter, buffer))
+        {
             count++;
         }
     }
@@ -212,9 +214,10 @@ int countMissFromFile(FILE *fp, unsigned char *filter)
 /*
  * Prints out contents of Bloom filter.
  */
-void printFilter(unsigned char *filter) 
+void printFilter(unsigned char *filter)
 {
-    for (int i = 0; i < M_NUM_BITS; i++) {
+    for (int i = 0; i < M_NUM_BITS; i++)
+    {
         printf("%d", filter[i]);
     }
     printf("\n");
@@ -223,13 +226,13 @@ void printFilter(unsigned char *filter)
 /*
  * Prints run time info.
  */
-void printInfo(int words_added, int words_check, 
-               double add_time, double check_time, int misses) {
-    
+void printInfo(int words_added, int words_check,
+               double add_time, double check_time, int misses)
+{
+
     printf("Words to add: %d\n", words_added);
     printf("Words to check: %d\n", words_check);
     printf("Time to add: %f\n", add_time);
     printf("Time to check: %f\n", check_time);
     printf("Total Misses: %d\n", misses);
-
 }
