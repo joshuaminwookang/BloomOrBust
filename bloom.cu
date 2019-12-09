@@ -9,11 +9,17 @@
 #include <helper_cuda.h>
 #include "bloom.h"
 
-#define SHARED
-#define BLOCK_SIZE 64.0
+/*  Change these to test different versions of the CUDA implementation  */
+
+#define SHARED_MAP      // Use for shared copy of filter in Map() kernel
+#define SHARED_TEST     // Use for shared copy of miss counter in Test() kernel
+#define BLOCK_SIZE 128.0
+
+
+
 
 /* 
- * Hash String in CUDA.
+ * Uses Horner's rule to get a hash value for a given String.
  */
 __device__ unsigned long cuda_hashstring(char *word)
 {
@@ -29,7 +35,7 @@ __device__ unsigned long cuda_hashstring(char *word)
 }
 
 /*
- * Hash string to multiple indices in CUDA.
+ * Hash string to multiple indices in the Bloom filter.
  */
 __device__ void cuda_hash(long *hashes, char *word)
 {
@@ -46,6 +52,7 @@ __device__ void cuda_hash(long *hashes, char *word)
 
 /*
  * Tests if word is in Bloom filter
+ * Unlike the serial version, returns 1 for a miss, 0 for hit
  */
 __device__ int cuda_testBloom(unsigned char *filter, char *word)
 {
@@ -63,6 +70,35 @@ __device__ int cuda_testBloom(unsigned char *filter, char *word)
 
   return 0;
 }
+
+/*
+ * Counts number of misses with shared memory.
+ */
+__global__ void s_cuda_countMisses(unsigned char *filter, String *words, int *count, int num_words)
+{
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  __shared__ int misses;
+
+  // only need one thread to initialize value
+  if (threadIdx.x == 0) {
+    misses = 0;
+  }
+
+  __syncthreads();
+  
+  if (index < num_words)
+  {
+    int miss = cuda_testBloom(filter, words[index].word);
+    atomicAdd(&misses, miss);
+  }
+
+  __syncthreads();
+  
+  if (threadIdx.x == 0) {
+    atomicAdd(count, misses);
+  }
+}
+
 
 /*
  * Counts number of misses.
@@ -101,8 +137,11 @@ __global__ void s_cuda_mapFromArray(unsigned char *bf_array, String *words, int 
 
   // initialize block's version of Bloom filter
   __shared__ unsigned char s_filter[M_NUM_BITS];
-  memset(s_filter, 0, M_NUM_BITS*sizeof(unsigned char));
 
+  for (int i = threadIdx.x; i < M_NUM_BITS; i += BLOCK_SIZE) {
+    s_filter[i] = 0;
+  }
+  
   __syncthreads();
   
   int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -114,10 +153,11 @@ __global__ void s_cuda_mapFromArray(unsigned char *bf_array, String *words, int 
   __syncthreads();
 
   // copy results into the bloom filter array
-  int chunk = ceil(M_NUM_BITS/BLOCK_SIZE);
-  for (int i = chunk * threadIdx.x; i < chunk * (threadIdx.x+1) && i < M_NUM_BITS; i++) {
+  //int chunk = ceil(M_NUM_BITS/BLOCK_SIZE);
+  for (int i = threadIdx.x; i < M_NUM_BITS; i += BLOCK_SIZE) {
 
-    // avoid race conditions by only setting when bit is set
+    // No Atomic functions for unsigned char
+    // Use branching to avoid race conditions by only setting when bit is set
     if (s_filter[i]) {
       bf_array[i] = s_filter[i];
     }
@@ -203,7 +243,7 @@ int main(int argc, char **argv)
 
   // map words to Bloom filter
   checkCudaErrors(cudaEventRecord(start_map));
-#ifdef SHARED  
+#ifdef SHARED_MAP
   s_cuda_mapFromArray<<<ceil(num_words_mapped / BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char *)d_bf_array,
                                                                       (String *)d_string_array,
                                                                       num_words_mapped);
@@ -225,9 +265,15 @@ int main(int argc, char **argv)
 
   // check if words are in Bloom filter
   checkCudaErrors(cudaEventRecord(start_test));
+#ifdef SHARED_TEST
+  s_cuda_countMisses<<<ceil(num_words_test / BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char *)d_bf_array,
+									(String *)d_test_array,
+									(int *)d_misses, num_words_test);
+#else
   cuda_countMisses<<<ceil(num_words_test / BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char *)d_bf_array,
-                                                                       (String *)d_test_array,
-                                                                       (int *)d_misses, num_words_test);
+									(String *)d_test_array,
+									(int *)d_misses, num_words_test);
+#endif
   checkCudaErrors(cudaEventRecord(stop_test));
 
   // get running time of test
