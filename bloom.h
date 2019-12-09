@@ -138,6 +138,11 @@ int fileToArray(FILE *fp, String **words)
             size = size * 2;
 
             *words = (String *)realloc(*words, size * sizeof(String));
+
+            if (*words == NULL)
+            {
+                printf("Reallocation failed at size %d.\n", size);
+            }
         }
     }
 
