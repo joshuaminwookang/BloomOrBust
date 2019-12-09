@@ -232,7 +232,7 @@ void printInfo(int words_mapped, int words_test,
 
     printf("Words to map: %d\n", words_mapped);
     printf("Words to test: %d\n", words_test);
-    printf("Time to map: %f\n", map_time);
-    printf("Time to test: %f\n", test_time);
+    printf("Time to map: %f ms\n", map_time);
+    printf("Time to test: %f ms\n", test_time);
     printf("Total Misses: %d\n", misses);
 }

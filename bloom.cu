@@ -9,6 +9,7 @@
 #include <helper_cuda.h>
 #include "bloom.h"
 
+#define SHARED
 #define BLOCK_SIZE 64.0
 
 /* 
@@ -43,6 +44,9 @@ __device__ void cuda_hash(long *hashes, char *word)
   }
 }
 
+/*
+ * Tests if word is in Bloom filter
+ */
 __device__ int cuda_testBloom(unsigned char *filter, char *word)
 {
   long hashes[K_NUM_HASH];
@@ -60,6 +64,9 @@ __device__ int cuda_testBloom(unsigned char *filter, char *word)
   return 0;
 }
 
+/*
+ * Counts number of misses.
+ */
 __global__ void cuda_countMisses(unsigned char *filter, String *words, int *count, int num_words)
 {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -84,14 +91,55 @@ __device__ void cuda_mapToBloom(unsigned char *filter, char *word)
   }
 }
 
-__global__ void cuda_mapToBloom(unsigned char *bf_array, String *words, int num_words)
+/*
+ * Shared version of mapFromArray().
+ * Each block has a copy of the Bloom filter.
+ * Each thread in a block copies the results to the bloom_filter at the end.
+ */
+__global__ void s_cuda_mapFromArray(unsigned char *bf_array, String *words, int num_words)
 {
+
+  // initialize block's version of Bloom filter
+  __shared__ unsigned char s_filter[M_NUM_BITS];
+  memset(s_filter, 0, M_NUM_BITS*sizeof(unsigned char));
+
+  __syncthreads();
+  
+  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  if (index < num_words)
+  {
+    cuda_mapToBloom(s_filter, words[index].word);
+  }
+
+  __syncthreads();
+
+  // copy results into the bloom filter array
+  int chunk = ceil(M_NUM_BITS/BLOCK_SIZE);
+  for (int i = chunk * threadIdx.x; i < chunk * (threadIdx.x+1) && i < M_NUM_BITS; i++) {
+
+    // avoid race conditions by only setting when bit is set
+    if (s_filter[i]) {
+      bf_array[i] = s_filter[i];
+    }
+  }
+  
+}
+
+/*
+ * Maps elements from the given array to the Bloom filter.
+ */
+__global__ void cuda_mapFromArray(unsigned char *bf_array, String *words, int num_words)
+{
+
   int index = blockIdx.x * blockDim.x + threadIdx.x;
   if (index < num_words)
   {
     cuda_mapToBloom(bf_array, words[index].word);
   }
+
+
 }
+
 
 int main(int argc, char **argv)
 {
@@ -101,30 +149,6 @@ int main(int argc, char **argv)
     printf("Usage: ./bloom WordsToMap WordsTotest\n");
     exit(1);
   }
-
-  // host data
-  unsigned char *h_bf_array = (unsigned char *)calloc(M_NUM_BITS, sizeof(unsigned char));
-  String *h_string_array = (String *)malloc(INIT_WORDS * sizeof(String));
-  String *h_test_array = (String *)malloc(INIT_WORDS * sizeof(String));
-  int h_misses[1];
-  h_misses[0] = 0;
-
-  // initialize array to empty strings
-  for (int i = 0; i < INIT_WORDS; i++)
-  {
-    strcpy(h_string_array[i].word, "");
-  }
-
-  for (int i = 0; i < INIT_WORDS; i++)
-  {
-    strcpy(h_test_array[i].word, "");
-  }
-
-  // device data
-  unsigned char *d_bf_array;
-  String *d_string_array;
-  String *d_test_array;
-  int *d_misses;
 
   // time measurement
   float map_time, test_time = 0;
@@ -149,23 +173,45 @@ int main(int argc, char **argv)
     exit(1);
   }
 
-  // read in file1
+  // host data
+  String *h_string_array = (String *)malloc(INIT_WORDS * sizeof(String));
+  String *h_test_array = (String *)malloc(INIT_WORDS * sizeof(String));
+  int h_misses[1];
+  h_misses[0] = 0;
+
+  // read in files
   int num_words_mapped = fileToArray(map_fp, &h_string_array);
   int num_words_test = fileToArray(test_fp, &h_test_array);
+  
+  // device data
+  String *d_string_array;
+  String *d_test_array;
+  int *d_misses;
+
+  // initialize Bloom filter host and device arrays
+  unsigned char *d_bf_array;
+  unsigned char *h_bf_array = (unsigned char *)calloc(M_NUM_BITS, sizeof(unsigned char));
+  checkCudaErrors(cudaMalloc((void **)&d_bf_array, M_NUM_BITS * sizeof(unsigned char)));
+  checkCudaErrors(cudaMemcpy(d_bf_array, h_bf_array, M_NUM_BITS * sizeof(unsigned char), cudaMemcpyHostToDevice));
 
   // allocate device arrays for map kernel
   checkCudaErrors(cudaMalloc((void **)&d_string_array, num_words_mapped * sizeof(String)));
   checkCudaErrors(cudaMemcpy(d_string_array, h_string_array, num_words_mapped * sizeof(String), cudaMemcpyHostToDevice));
   checkCudaErrors(cudaMalloc((void **)&d_test_array, num_words_test * sizeof(String)));
   checkCudaErrors(cudaMemcpy(d_test_array, h_test_array, num_words_test * sizeof(String), cudaMemcpyHostToDevice));
-  checkCudaErrors(cudaMalloc((void **)&d_bf_array, M_NUM_BITS * sizeof(unsigned char)));
-  checkCudaErrors(cudaMemcpy(d_bf_array, h_bf_array, M_NUM_BITS * sizeof(unsigned char), cudaMemcpyHostToDevice));
+
 
   // map words to Bloom filter
   checkCudaErrors(cudaEventRecord(start_map));
-  cuda_mapToBloom<<<ceil(num_words_mapped / BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char *)d_bf_array,
+#ifdef SHARED  
+  s_cuda_mapFromArray<<<ceil(num_words_mapped / BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char *)d_bf_array,
                                                                       (String *)d_string_array,
                                                                       num_words_mapped);
+#else
+  cuda_mapFromArray<<<ceil(num_words_mapped / BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char *)d_bf_array,
+									   (String *)d_string_array,
+									   num_words_mapped);
+#endif
   checkCudaErrors(cudaEventRecord(stop_map));
 
   // get running time of map
@@ -189,12 +235,12 @@ int main(int argc, char **argv)
   checkCudaErrors(cudaEventElapsedTime(&test_time, start_test, stop_test));
 
   // get resulting Bloom filter
-  checkCudaErrors(cudaMemcpy(h_bf_array, d_bf_array, M_NUM_BITS * sizeof(unsigned char), cudaMemcpyDeviceToHost));
+  //checkCudaErrors(cudaMemcpy(h_bf_array, d_bf_array, M_NUM_BITS * sizeof(unsigned char), cudaMemcpyDeviceToHost));
   checkCudaErrors(cudaMemcpy(h_misses, d_misses, sizeof(int), cudaMemcpyDeviceToHost));
 
   // print run time info
   printInfo(num_words_mapped, num_words_test, map_time, test_time, *h_misses);
-
+  
   // cleanup
   cudaEventDestroy(start_map);
   cudaEventDestroy(stop_map);
