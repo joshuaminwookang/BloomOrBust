@@ -22,13 +22,13 @@
 
 // hard-coded test inputs
 static char tiny0 [20][BUF_SIZE] = {
-    "words", "in", "this," 
+    "words", "in", "this", 
     "file",  "will", "be", "added", "to", "the", "bloom" , "filter"
 };
 
 static char tiny1 [20][BUF_SIZE] = {
-    "these", "words", "may", "or" 
-    "may",  "not", "be", "in","the", "bloom" , "filter"
+    "these", "words", "may", "or",
+    "may",  "not", "be", "in", "the", "bloom" , "filter"
 };
 
 /*
@@ -118,6 +118,24 @@ int hw_countMissFromArray(int num)
     return count;
 }
 
+/* (Using HW accelerator)
+ * Counts number of misses from tests
+ */
+int hw_dummy_countMissFromArray(int num)
+{
+
+    int count = 0;
+
+    for (int i = 0; i < num; i++)
+    {
+        printf("Word to TEST: %s with hash value :%lu\n",tiny0[i], hashstring(tiny0[i]));
+        count = hw_testBloom(hashstring(tiny0[i]));
+        printf("Current miss count: %d\n", count);
+    }
+
+    return count;
+}
+
 
 
 /*
@@ -130,6 +148,10 @@ int main(void)
     hw_mapWordsFromArray(NUM_WORDS);
 
     // HW: test if words in file 2 are in Bloom filter
+    hw_misses = hw_dummy_countMissFromArray(NUM_WORDS);
+    // print out test results
+    printf(" HW Miss: %d: \n", hw_misses);
+
     hw_misses = hw_countMissFromArray(NUM_WORDS);
 
     // print out test results
