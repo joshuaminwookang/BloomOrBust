@@ -21,12 +21,12 @@
 #define NUM_WORDS 20
 
 // hard-coded test inputs
-const char tiny0 [20][BUF_SIZE] = {
+static char tiny0 [20][BUF_SIZE] = {
     "words", "in", "this," 
     "file",  "will", "be", "added", "to,","the", "bloom" , "filter"
 };
 
-const char tiny1 [20][BUF_SIZE] = {
+static char tiny1 [20][BUF_SIZE] = {
     "these", "words", "may", "or," 
     "may",  "not", "be", "in","the", "bloom" , "filter"
 };
