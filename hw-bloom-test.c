@@ -44,6 +44,21 @@ static inline unsigned long hw_testBloom(long hash)
 	return rd;
 }
 
+/* 
+ * Software version of function to map a word to bloom filter.
+ * Places 1 in filter at indices that given word maps to.
+ */
+void sw_mapToBloom(unsigned char *filter, char *word)
+{
+    long *hashes = (long *)calloc(K_NUM_HASH, sizeof(long));
+    hash(hashes, word);
+
+    for (int i = 0; i < K_NUM_HASH; i++)
+    {
+        filter[hashes[i]] = 1;
+    }
+}
+
 /*
  * Using HW accelerator:
  * reads words from array and map them to Bloom filter.
@@ -63,7 +78,7 @@ void sw_mapWordsFromArray(String *words, int num, unsigned char *filter)
 {
     for (int i = 0; i < num; i++)
     {
-        mapToBloom(filter, words[i].word);
+        sw_mapToBloom(filter, words[i].word);
     }
 }
 
@@ -141,7 +156,7 @@ int main(void)
     sw_mapWordsFromArray(words_to_map, num_words_mapped, sw_bloom_filter_array);
 
     // SW: test if words in file 2 are in Bloom filter
-    sw_misses = countMissFromArray(words_to_test, num_words_test, sw_bloom_filter_array);
+    sw_misses = sw_countMissFromArray(words_to_test, num_words_test, sw_bloom_filter_array);
 
     // HW: map words to Bloom filter
     hw_mapWordsFromArray(words_to_map, num_words_mapped);
