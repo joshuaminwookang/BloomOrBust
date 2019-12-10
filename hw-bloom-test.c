@@ -20,11 +20,22 @@
 #define HASH_NUM 5381    // number used for hash function
 #define NUM_WORDS 20
 
+// hard-coded test inputs
+const char tiny0 [20][BUF_SIZE] = {
+    "words", "in", "this," 
+    "file",  "will", "be", "added", "to,","the", "bloom" , "filter"
+};
+
+const char tiny1 [20][BUF_SIZE] = {
+    "these", "words", "may", "or," 
+    "may",  "not", "be", "in","the", "bloom" , "filter"
+};
+
 /*
  * Hash function for a string using Horner's Rule.
  * Given a string, returns a number.
  */
-unsigned long hashstring(char[BUF_SIZE] word)
+unsigned long hashstring(char* word)
 {
     unsigned char *str = (unsigned char *)word;
     unsigned long hash = HASH_NUM;
@@ -102,15 +113,7 @@ int hw_countMissFromArray(int num)
     return count;
 }
 
-static const char tiny0 [20][BUF_SIZE] = {
-    "words", "in", "this," 
-    "file",  "will", "be", "added", "to,","the", "Bloom" , "filter"
-};
 
-static const char tiny1 [20][BUF_SIZE] = {
-    "words", "in", "this," 
-    "file",  "will", "be", "added", "to,","the", "Bloom" , "filter"
-};
 
 /*
  * Test script 
