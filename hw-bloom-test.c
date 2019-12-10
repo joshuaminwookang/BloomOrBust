@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "rocc.h"
-#include "sha3.h"
+#include "bloom.h"
 #include "encoding.h"
 #include "compiler.h"
 
@@ -16,7 +16,7 @@
 static inline unsigned long hw_initBloom()
 {
     unsigned long rd;
-	ROCC_INSTRUCTION(2, rd, rs1, 0);
+	ROCC_INSTRUCTION(2, 0);
 	return rd ;
 }
 
@@ -25,10 +25,10 @@ static inline unsigned long hw_initBloom()
  * @ params: hash value of input string to be mapped
  * @ returns: hash value of input string
  */
-static inline unsigned long hw_mapToBloom(int rs1)
+static inline unsigned long hw_mapToBloom(long hash)
 {
     unsigned long rd;
-	ROCC_INSTRUCTION_DS(2, rd, rs1, 1);
+	ROCC_INSTRUCTION_DS(2, rd, hash, 1);
 	return rd;
 }
 
@@ -37,11 +37,69 @@ static inline unsigned long hw_mapToBloom(int rs1)
  * @ params: hash value of string to be tested against BF
  * @ returns: current miss count
  */
-static inline unsigned long hw_mapToBloom(int rs1)
+static inline unsigned long hw_testBloom(long hash)
 {
     unsigned long rd;
-	ROCC_INSTRUCTION_DS(2, rd, rs1, 2);
+	ROCC_INSTRUCTION_DS(2, rd, hash, 2);
 	return rd;
+}
+
+/*
+ * Using HW accelerator:
+ * reads words from array and map them to Bloom filter.
+ */
+void hw_mapWordsFromArray(String *words, int num)
+{
+    for (int i = 0; i < num; i++)
+    {
+       hw_mapToBloom((int) hashstring(words[i].word));
+    }
+}
+
+/* (Using C SW)
+ * Reads words from array and maps them to Bloom filter.
+ */
+void sw_mapWordsFromArray(String *words, int num, unsigned char *filter)
+{
+    for (int i = 0; i < num; i++)
+    {
+        mapToBloom(filter, words[i].word);
+    }
+}
+
+/* (Using HW accelerator)
+ * Counts number of misses from tests
+ */
+int hw_countMissFromArray(String *words, int num)
+{
+
+    int count = 0;
+
+    for (int i = 0; i < num; i++)
+    {
+        count = hw_testBloom(hashstring(words[i].word));
+    }
+
+    return count;
+}
+
+/* (Using C SW)
+ * Counts number of misses from tests
+ */
+int sw_countMissFromArray(String *words, int num, unsigned char *filter)
+{
+
+    int count = 0;
+
+    for (int i = 0; i < num; i++)
+    {
+        if (!testBloom(filter, words[i].word))
+        {
+            count++;
+        }
+    }
+
+    return count;
 }
 
 /*
@@ -49,17 +107,59 @@ static inline unsigned long hw_mapToBloom(int rs1)
  */
 int main(void)
 {
-	unsigned long result1, result2, sum;
-	result1 = ephelia_add(0,1);
-    result2 = ephelia_add(0,4);
-    sum = ephelia_add(1,4);
+    // initialize bloom filter array
+    unsigned char *sw_bloom_filter_array = calloc(M_NUM_BITS, sizeof(unsigned char));
 
-	if (sum == (result1+result2)){
-        printf(" TEST Successful \n");
-    } else{
-	    printf(" TEST FAILED ARGHGHGHGHGHGH \n");
-        return 1;
+    // initialize arrays of Strings
+    String *words_to_map= (String *)malloc(INIT_WORDS * sizeof(String));
+    String *words_to_test = (String *)malloc(INIT_WORDS * sizeof(String));
+
+    // open files
+    FILE *map_fp = fopen("tiny0", "r");
+    if (map_fp == NULL)
+    {
+        printf("Failed to open %s. \n", "tiny0");
+        exit(1);
     }
+
+    FILE *test_fp = fopen("tiny1", "r");
+    if (test_fp == NULL)
+    {
+        printf("Failed to open %s. \n", "tiny1");
+        exit(1);
+    }
+
+    // map words from files
+    int num_words_mapped = fileToArray(map_fp, &words_to_map);
+    int num_words_test = fileToArray(test_fp, &words_to_test);
+
+    int sw_misses;
+    int hw_misses;
+
+
+    // SW: map words to Bloom filter
+    sw_mapWordsFromArray(words_to_map, num_words_mapped, sw_bloom_filter_array);
+
+    // SW: test if words in file 2 are in Bloom filter
+    sw_misses = countMissFromArray(words_to_test, num_words_test, sw_bloom_filter_array);
+
+    // HW: map words to Bloom filter
+    hw_mapWordsFromArray(words_to_map, num_words_mapped);
+
+    // HW: test if words in file 2 are in Bloom filter
+    hw_misses = hw_countMissFromArray(words_to_test, num_words_test);
+
     
-	return 0;
+    // print out test results
+    if (sw_misses == hw_misses){  
+        printf(" TEST Successful \n HW Miss: %d SW MISS: \n", hw_misses, sw_misses);
+    } else {
+        printf(" TEST Failed \n HW Miss: %d SW MISS: \n", hw_misses, sw_misses);
+        exit(1);
+    }
+    free(sw_bloom_filter_array);
+    free(words_to_map);
+    free(words_to_test);
+
+    return 0;
 }
