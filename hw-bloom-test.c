@@ -94,7 +94,7 @@ void hw_mapWordsFromArray(int num)
     for (int i = 0; i < num; i++)
     {
        unsigned long returnValue ; 
-       printf("Word to MAP: %s with hash value :%lu\n",tiny0[i], hashstring(tiny0[i]);
+       printf("Word to MAP: %s with hash value :%lu\n",tiny0[i], hashstring(tiny0[i]));
        returnValue = hw_mapToBloom(hashstring(tiny0[i]));
        printf("HW Map Function returned: %lu\n", returnValue);
     }
