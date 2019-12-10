@@ -23,11 +23,11 @@
 // hard-coded test inputs
 static char tiny0 [20][BUF_SIZE] = {
     "words", "in", "this," 
-    "file",  "will", "be", "added", "to,","the", "bloom" , "filter"
+    "file",  "will", "be", "added", "to", "the", "bloom" , "filter"
 };
 
 static char tiny1 [20][BUF_SIZE] = {
-    "these", "words", "may", "or," 
+    "these", "words", "may", "or" 
     "may",  "not", "be", "in","the", "bloom" , "filter"
 };
 
