@@ -110,7 +110,7 @@ int hw_countMissFromArray(int num)
 
     for (int i = 0; i < num; i++)
     {
-        printf("Word to TEST: %s with hash value :%lu\n",tiny1[i], hashstring(tiny1[i]);
+        printf("Word to TEST: %s with hash value :%lu\n",tiny1[i], hashstring(tiny1[i]));
         count = hw_testBloom(hashstring(tiny1[i]));
         printf("Current miss count: %d\n", count);
     }
