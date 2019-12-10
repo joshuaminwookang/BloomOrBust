@@ -93,7 +93,10 @@ void hw_mapWordsFromArray(int num)
 {
     for (int i = 0; i < num; i++)
     {
-       hw_mapToBloom(hashstring(tiny0[i]));
+       unsigned long returnValue ; 
+       printf("Word to MAP: %s with hash value :%lu\n",tiny0[i], hashstring(tiny0[i]);
+       returnValue = hw_mapToBloom(hashstring(tiny0[i]));
+       printf("HW Map Function returned: %lu\n", returnValue);
     }
 }
 
@@ -107,7 +110,9 @@ int hw_countMissFromArray(int num)
 
     for (int i = 0; i < num; i++)
     {
+        printf("Word to TEST: %s with hash value :%lu\n",tiny1[i], hashstring(tiny1[i]);
         count = hw_testBloom(hashstring(tiny1[i]));
+        printf("Current miss count: %d\n", count);
     }
 
     return count;
