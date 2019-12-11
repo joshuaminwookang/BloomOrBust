@@ -24,6 +24,11 @@ typedef struct String
 
 /*      METHODS IN THIS HEADER       */
 
+int cmpString(const void *a, const void *b)
+{
+    return strcmp(((String *)a)->word, ((String *)b)->word);
+}
+
 // return a hash value for String
 unsigned long hashstring(char *word);
 

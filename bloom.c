@@ -122,18 +122,6 @@ int main(int argc, char **argv)
     end = clock();
     test_time = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
 
-
-    start = clock();
-    mapWordsFromFile(map_fp, bloom_filter_array);
-    end = clock();
-    map_time = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
-
-    start = clock();
-    misses = countMissFromFile(test_fp, bloom_filter_array);
-    end = clock();
-    test_time = ((double)(end - start)) / CLOCKS_PER_SEC * 1000;
-
-    
     // print out info
     printInfo(num_words_mapped, num_words_test, map_time, test_time, misses);
 
