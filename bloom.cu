@@ -13,7 +13,7 @@
 
 #define SHARED_MAP      // Use for shared copy of filter in Map() kernel
 #define SHARED_TEST     // Use for shared copy of miss counter in Test() kernel
-#define BLOCK_SIZE 128.0
+#define BLOCK_SIZE 8.0
 
 
 
@@ -137,7 +137,6 @@ __global__ void s_cuda_mapFromArray(unsigned char *bf_array, String *words, int 
 
   // initialize block's version of Bloom filter
   __shared__ unsigned char s_filter[M_NUM_BITS];
-
   for (int i = threadIdx.x; i < M_NUM_BITS; i += BLOCK_SIZE) {
     s_filter[i] = 0;
   }
@@ -153,11 +152,11 @@ __global__ void s_cuda_mapFromArray(unsigned char *bf_array, String *words, int 
   __syncthreads();
 
   // copy results into the bloom filter array
-  //int chunk = ceil(M_NUM_BITS/BLOCK_SIZE);
   for (int i = threadIdx.x; i < M_NUM_BITS; i += BLOCK_SIZE) {
 
     // No Atomic functions for unsigned char
     // Use branching to avoid race conditions by only setting when bit is set
+    // Branching also avoid unnecessary writes..
     if (s_filter[i]) {
       bf_array[i] = s_filter[i];
     }
