@@ -170,7 +170,7 @@ int main(void)
     mapWordsFromArray(TINYV3_MAP);
     #endif
     #ifdef TINYV3_TEST
-    mapWordsFromArray(TINYV3_TEST);
+    mapWordsFromArray(30);
     #endif
     end = rdcycle();  
     printf("SW MAP execution took %lu cycles\n", end - start); 
@@ -185,7 +185,7 @@ int main(void)
     sw_misses = countMissFromArray(TINYV2);
     #endif
     #ifdef TINYV3_MAP
-    sw_misses = countMissFromArray(TINYV3_MAP);
+    sw_misses = countMissFromArray(30);
     #endif
     #ifdef TINYV3_TEST
     sw_misses = countMissFromArray(TINYV3_TEST);

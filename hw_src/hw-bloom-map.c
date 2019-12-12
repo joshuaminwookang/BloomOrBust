@@ -168,7 +168,7 @@ int main(void)
         hw_mapWordsFromArray(TINYV3_MAP);
     #endif 
     #ifdef TINYV3_TEST
-        hw_mapWordsFromArray(TINYV3_TEST);
+        hw_mapWordsFromArray(30);
     #endif 
     #ifdef SMALL       
         returnValue = hw_mapToBloom(hashstring(small[i]));
@@ -187,7 +187,7 @@ int main(void)
         hw_misses = hw_countMissFromArray(TINYV2);
     #endif 
     #ifdef TINYV3_MAP
-        hw_misses = hw_countMissFromArray(TINYV3_MAP);
+        hw_misses = hw_countMissFromArray(30);
     #endif 
     #ifdef TINYV3_TEST
         hw_misses = hw_countMissFromArray(TINYV3_TEST);
