@@ -22,7 +22,8 @@
 
 // #define TINY 11
 #define TINYV2 30
-// #define TINYV3 50
+#define TINYV3_MAP  50
+// #define TINYV3_TEST  50
 
 /* global Bloom bit array */
 unsigned char bloom_filter_array[M_NUM_BITS];
@@ -56,6 +57,12 @@ void mapToBloom(int index)
     long x = hashstring(tiny0[index]); 
     #endif
     #ifdef TINYV2
+    long x = hashstring(tiny2[index]); 
+    #endif
+    #ifdef TINYV3_MAP
+    long x = hashstring(tiny4[index]); 
+    #endif
+    #ifdef TINYV3_TEST
     long x = hashstring(tiny2[index]); 
     #endif
     
@@ -94,6 +101,12 @@ int testBloom(int index)
     #endif
     #ifdef TINYV2
     long x = hashstring(tiny3[index]); 
+    #endif
+    #ifdef TINYV3_MAP
+    long x = hashstring(tiny3[index]); 
+    #endif
+    #ifdef TINYV3_TEST
+    long x = hashstring(tiny4[index]); 
     #endif
     long y = x >> 4; 
 
@@ -135,7 +148,7 @@ int main(void)
     unsigned long start, end;
     int sw_misses = 0;
 
-    printf(" Beginning SW test for Map\n");
+    printf("Beginning Bloom filter SW \n");
     
     // Initialize SW bloom filter array
     memset(bloom_filter_array, 0, M_NUM_BITS);
@@ -150,9 +163,14 @@ int main(void)
     #ifdef TINY
     mapWordsFromArray(TINY);
     #endif
-
     #ifdef TINYV2
     mapWordsFromArray(TINYV2);
+    #endif
+    #ifdef TINYV3_MAP
+    mapWordsFromArray(TINYV3_MAP);
+    #endif
+    #ifdef TINYV3_TEST
+    mapWordsFromArray(TINYV3_TEST);
     #endif
     end = rdcycle();  
     printf("SW MAP execution took %lu cycles\n", end - start); 
@@ -165,6 +183,12 @@ int main(void)
     #endif
     #ifdef TINYV2
     sw_misses = countMissFromArray(TINYV2);
+    #endif
+    #ifdef TINYV3_MAP
+    sw_misses = countMissFromArray(TINYV3_MAP);
+    #endif
+    #ifdef TINYV3_TEST
+    sw_misses = countMissFromArray(TINYV3_TEST);
     #endif
     end = rdcycle(); 
 

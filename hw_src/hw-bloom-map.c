@@ -19,22 +19,11 @@
 #define K_NUM_HASH 5     // number of hash functions
 #define HASH_NUM 5381    // number used for hash function
 // #define TINY 11
-#define TINYV2 30
-// #define TINYV3 50
+//#define TINYV2 30
+ #define TINYV3_MAP  50
+// #define TINYV3_TEST  50
 // #define SMALL 10000
-// #define MEDIUM 466551
-// #define BIG 1095695
-// #define TEST_SIZE 1095695
 
-// #ifdef TINY
-// #include "small_data.h"
-// #endif
-// #ifdef TINYV2
-// #include "small_data.h"
-// #endif
-// #ifdef TINYV3
-// #include "medium_data.h"
-// #endif
 #include "small_data.h"
 
 
@@ -114,6 +103,15 @@ void hw_mapWordsFromArray(int num)
         #ifdef TINYV2       
         returnValue = hw_mapToBloom(hashstring(tiny2[i]));
         #endif
+        #ifdef TINYV3_MAP       
+        returnValue = hw_mapToBloom(hashstring(tiny4[i]));
+        #endif
+        #ifdef TINYV3_TEST       
+        returnValue = hw_mapToBloom(hashstring(tiny2[i]));
+        #endif
+        #ifdef SMALL       
+        returnValue = hw_mapToBloom(hashstring(small[i]));
+        #endif
     }
 }
 
@@ -130,7 +128,15 @@ int hw_countMissFromArray(int num)
         #ifdef TINY
         count = hw_testBloom(hashstring(tiny1[i]));
         #endif 
+        #ifdef TINYV2
         count = hw_testBloom(hashstring(tiny3[i]));
+        #endif 
+        #ifdef TINYV3_MAP
+        count = hw_testBloom(hashstring(tiny3[i]));
+        #endif 
+        #ifdef TINYV3_TEST
+        count = hw_testBloom(hashstring(tiny4[i]));
+        #endif 
     }
 
     return count;
@@ -158,6 +164,15 @@ int main(void)
     #ifdef TINYV2
         hw_mapWordsFromArray(TINYV2);
     #endif 
+    #ifdef TINYV3_MAP
+        hw_mapWordsFromArray(TINYV3_MAP);
+    #endif 
+    #ifdef TINYV3_TEST
+        hw_mapWordsFromArray(TINYV3_TEST);
+    #endif 
+    #ifdef SMALL       
+        returnValue = hw_mapToBloom(hashstring(small[i]));
+    #endif
     // asm volatile ("fence");
     end = rdcycle();
     printf("MAP execution took %lu cycles\n", end - start);
@@ -171,6 +186,15 @@ int main(void)
     #ifdef TINYV2
         hw_misses = hw_countMissFromArray(TINYV2);
     #endif 
+    #ifdef TINYV3_MAP
+        hw_misses = hw_countMissFromArray(TINYV3_MAP);
+    #endif 
+    #ifdef TINYV3_TEST
+        hw_misses = hw_countMissFromArray(TINYV3_TEST);
+    #endif 
+    #ifdef SMALL       
+        returnValue = hw_mapToBloom(hashstring(tiny2[i]));
+    #endif
     
     // asm volatile ("fence");
     end = rdcycle();   

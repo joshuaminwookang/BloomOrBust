@@ -30,6 +30,15 @@ static char tiny3 [30][100] = {
     "Maybe", "the", "streets", "alight", "maybe", "the", "trees", "are", "gone","waterfull"
 };
 
+static char tiny4 [50][100] = {
+    "Ivan", "Ilyich", "please", "let", "me", "place", "a", "bet", "As","you",
+    "wish", "sir", "One", "hundred", "rubbles", "Its", "all", "right", "Good","luck",
+    "to", "you", "It", "looks", "so", "bad", "Youll", "need", "to","get",
+    "it", "back", "Here", "goes", "Let", "me", "place", "a", "bet","All"
+    "in", "Thatll", "sting", "you", "The", "Masquerade", "by", "Mikhail", "Yurievich","Lermontov"
+};
+
+
 static char small [10000][100] = {
 "a",
 "aa",
