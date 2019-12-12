@@ -240,11 +240,19 @@ int countMissFromArray(int num)
 int main(void)
 {
     unsigned long start, end;
-    int hw_misses;
+    int hw_misses = 0;
+    int sw_misses = 0;
 
     // Initalize BF Accelerator
     asm volatile ("fence");
     hw_initBloom();
+
+    // Initialize SW bloom filter array
+    // memset(bloom_filter_array, 0, M_NUM_BITS);
+    for (int i = 0; i < M_NUM_BITS; i++)
+    {
+        bloom_filter_array[0] = 0;
+    }
 
     // Compute Map with accelerator   
     start = rdcycle();                                                                                                                                      
@@ -280,7 +288,7 @@ int main(void)
     // SW: Map
     start = rdcycle(); 
     // map words to Bloom filter
-    mapWordsFromArray(MEDIUM);
+    mapWordsFromArray(MAP_SIZE);
     end = rdcycle();  
     printf("SW MAP execution took %lu cycles\n", end - start); 
 

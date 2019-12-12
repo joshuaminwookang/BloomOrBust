@@ -247,7 +247,7 @@ int main(void)
     asm volatile ("fence");
     hw_initBloom();
 
-    // initialize SW bloom filter array
+    // Initialize SW bloom filter array
     // memset(bloom_filter_array, 0, M_NUM_BITS);
     for (int i = 0; i < M_NUM_BITS; i++)
     {
