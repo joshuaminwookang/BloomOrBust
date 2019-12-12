@@ -35,9 +35,6 @@
 #endif
 #include "big_data.h"
 
-/* global Bloom bit array */
-unsigned char bloom_filter_array[M_NUM_BITS];
-
 
 /*
  * Hash function for a string using Horner's Rule.
@@ -62,7 +59,7 @@ unsigned long hashstring(char* word)
  * map word to bloom filter.
  * Places 1 in filter at indices that given word maps to.
  */
-void mapToBloom(int index)
+void mapToBloom(unsigned char * filter,int index)
 {
     #ifdef TINY
     long x = hashstring(tiny0[index]); 
@@ -82,18 +79,18 @@ void mapToBloom(int index)
     {
         x = (x + y) % M_NUM_BITS; // ith hash value
         y = (y + i) % M_NUM_BITS; // displacement
-        bloom_filter_array[x] = 1;
+        filter[x] = 1;
     }
 }
 
 /*
  * Reads words from array and maps them to Bloom filter.
  */
-void mapWordsFromArray(int num)
+void mapWordsFromArray(unsigned char * filter, int num)
 {
     for (int i = 0; i < num; i++)
     {
-        mapToBloom(i);
+        mapToBloom(filter, i);
     }
 }
 
@@ -104,7 +101,7 @@ void mapWordsFromArray(int num)
  *
  * Returns 1 if search is positive, 0 if negative.
  */
-int testBloom(int index)
+int testBloom(unsigned char * filter,int index)
 {
     long x = hashstring(big[index]); 
     long y = x >> 4; 
@@ -114,7 +111,7 @@ int testBloom(int index)
         x = (x + y) % M_NUM_BITS; // ith hash value
         y = (y + i) % M_NUM_BITS; // displacement
 
-        if (!bloom_filter_array[x])
+        if (!filter[x])
         {
             return 0;
         }
@@ -123,13 +120,13 @@ int testBloom(int index)
     return 1;
 }
 
-int countMissFromArray(int num)
+int countMissFromArray(unsigned char * filter, int num)
 {
     int count = 0;
 
     for (int i = 0; i < num; i++)
     {
-        if (!testBloom(i))
+        if (!testBloom(filter, i))
         {
             count++;
         }
@@ -147,6 +144,8 @@ int main(void)
     unsigned long start, end;
     int sw_misses = 0;
 
+    /* SW Bloom bit array */
+    unsigned char bloom_filter_array[M_NUM_BITS];   
     // Initialize SW bloom filter array
     memset(bloom_filter_array, 0, M_NUM_BITS);
     // for (int i = 0; i < M_NUM_BITS; i++)
