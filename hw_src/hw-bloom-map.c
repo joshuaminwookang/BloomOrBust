@@ -112,9 +112,7 @@ void hw_mapWordsFromArray(int num)
         returnValue = hw_mapToBloom(hashstring(tiny0[i]));
         #endif
         #ifdef TINYV2       
-        printf("Word to MAP: %s with hash value :%lu\n",tiny2[i], hashstring(tiny2[i]));
         returnValue = hw_mapToBloom(hashstring(tiny2[i]));
-        printf("HW Map Function returned: %lu\n", returnValue);
         #endif
     }
 }
@@ -132,9 +130,7 @@ int hw_countMissFromArray(int num)
         #ifdef TINY
         count = hw_testBloom(hashstring(tiny1[i]));
         #endif 
-        printf("Word to TEST: %s with hash value :%lu\n",tiny3[i], hashstring(tiny3[i]));
         count = hw_testBloom(hashstring(tiny3[i]));
-        printf("HW TEST Function returned: %lu\n", count);
     }
 
     return count;
@@ -155,20 +151,20 @@ int main(void)
 
     // HW: MAP
     start = rdcycle();                                                                                                                                      
-    asm volatile ("fence");
+    // asm volatile ("fence");
     #ifdef TINY
         hw_mapWordsFromArray(TINY);
     #endif 
     #ifdef TINYV2
         hw_mapWordsFromArray(TINYV2);
     #endif 
-    asm volatile ("fence");
+    // asm volatile ("fence");
     end = rdcycle();
     printf("MAP execution took %lu cycles\n", end - start);
 
     // HW: TEST
     start = rdcycle();  
-    asm volatile ("fence");
+    // asm volatile ("fence");
     #ifdef TINY
         hw_misses = hw_countMissFromArray(TINY);
     #endif 
@@ -176,11 +172,11 @@ int main(void)
         hw_misses = hw_countMissFromArray(TINYV2);
     #endif 
     
-    asm volatile ("fence");
+    // asm volatile ("fence");
     end = rdcycle();   
     printf("TEST execution took %lu cycles\n", end - start);
     // print out test results
-    printf(" HW Miss: %d: \n", hw_misses);
+    printf("------\nTotal Hardware Miss: %d \n------\n", hw_misses);
 
     return 0;
 }
