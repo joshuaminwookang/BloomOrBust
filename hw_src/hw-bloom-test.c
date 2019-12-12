@@ -25,7 +25,13 @@
 // #define SMALL 10000
 // #define MEDIUM 466551
 // #define BIG 1095695
-#define DEFAULT 10000
+
+#define MAP_SIZE 466551
+
+/* global Bloom bit array */
+unsigned char bloom_filter_array[M_NUM_BITS];
+
+
 /*
  * Hash function for a string using Horner's Rule.
  * Given a string, returns a number.
@@ -44,7 +50,6 @@ unsigned long hashstring(char* word)
 
     return hash;
 }
-
 
 /*
  * Initializes / resets Bloom filter hardware accelerator 
@@ -95,7 +100,7 @@ void hw_mapWordsFromArray(int num)
     for (int i = 0; i < num; i++)
     {
         unsigned long returnValue ; 
-        returnValue = hw_mapToBloom(hashstring(small[i]));
+        returnValue = hw_mapToBloom(hashstring(medium[i]));
     }
     return;
 }
@@ -148,6 +153,88 @@ int hw_dummy_countMissFromArray(int num)
 }
 
 /*
+ * map word to bloom filter.
+ * Places 1 in filter at indices that given word maps to.
+ */
+void mapToBloom(int index)
+{
+    long x = hashstring(medium[index]); 
+    
+    long y = x >> 4;
+
+    for (int i = 0; i < K_NUM_HASH; i++)
+    {
+        x = (x + y) % M_NUM_BITS; // ith hash value
+        y = (y + i) % M_NUM_BITS; // displacement
+        bloom_filter_array[x] = 1;
+    }
+}
+
+/*
+ * Reads words from array and maps them to Bloom filter.
+ */
+void mapWordsFromArray(int num)
+{
+    for (int i = 0; i < num; i++)
+    {
+        mapToBloom(i);
+    }
+}
+
+/*
+ * tests if word is in bloom filter.
+ * Tests if there is a 1 in filter at indices 
+ * that given word maps to.
+ *
+ * Returns 1 if search is positive, 0 if negative.
+ */
+int testBloom(int index)
+{
+    #ifdef TINY
+    long x = hashstring(tiny1[index]); 
+    #endif
+    #ifdef SMALL
+    long x = hashstring(small[index]); 
+    #endif
+    #ifdef MEDIUM
+    long x = hashstring(medium[index]); 
+    #endif
+    #ifdef BIG
+    long x = hashstring(large[index]); 
+    #endif
+    long y = x >> 4; 
+
+    for (int i = 0; i < K_NUM_HASH; i++)
+    {
+        x = (x + y) % M_NUM_BITS; // ith hash value
+        y = (y + i) % M_NUM_BITS; // displacement
+
+        if (!bloom_filter_array[x])
+        {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+int countMissFromArray(int num)
+{
+    int count = 0;
+
+    for (int i = 0; i < num; i++)
+    {
+        if (!testBloom(i))
+        {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+
+/*
  * Test script 
  */
 int main(void)
@@ -167,16 +254,6 @@ int main(void)
     asm volatile ("fence");
     end = rdcycle();
     printf("MAP execution took %lu cycles\n", end - start);
-
-    // // HW: test if words in file 2 are in Bloom filter
-    // start = rdcycle();  
-    // asm volatile ("fence");
-    // hw_misses = hw_dummy_countMissFromArray(NUM_WORDS);
-    // asm volatile ("fence");
-    // end = rdcycle();    
-    // printf("DUMMY execution took %lu cycles\n", end - start);
-    // // print out test results
-    // printf(" HW Miss: %d: \n", hw_misses);
 
     // HW: test if words in file 2 are in Bloom filter
     start = rdcycle();  
@@ -199,6 +276,34 @@ int main(void)
     printf("TEST execution took %lu cycles\n", end - start);
     // print out test results
     printf(" HW Miss: %d: \n", hw_misses);
+
+    // SW: Map
+    start = rdcycle(); 
+    // map words to Bloom filter
+    mapWordsFromArray(MEDIUM);
+    end = rdcycle();  
+    printf("SW MAP execution took %lu cycles\n", end - start); 
+
+    // SW: TEST
+    start = rdcycle(); 
+    // test if words in file 2 are in Bloom filter
+    #ifdef TINY
+        sw_misses = countMissFromArray(TINY);
+    #endif 
+    #ifdef SMALL
+        sw_misses = countMissFromArray(SMALL);
+    #endif 
+    #ifdef MEDIUM
+        sw_misses = countMissFromArray(MEDIUM);
+    #endif 
+    #ifdef BIG
+        sw_misses = countMissFromArray(BIG);
+    #endif 
+    end = rdcycle(); 
+
+    // print out info
+    printf("SW TEST execution took %lu cycles\n", end - start); 
+    printf("Software Misses: %d\n", sw_misses);
 
     return 0;
 }
