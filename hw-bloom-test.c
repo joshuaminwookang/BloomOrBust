@@ -136,25 +136,42 @@ int hw_dummy_countMissFromArray(int num)
     return count;
 }
 
-
-
 /*
  * Test script 
  */
 int main(void)
 {
+    unsigned long hw_start, hw_end;
     int hw_misses;
+
+    // Compute Map with accelerator   
+    start = rdcycle();                                                                                                                                      
+    asm volatile ("fence");
     // HW: map words to Bloom filter
     hw_mapWordsFromArray(NUM_WORDS);
+    asm volatile ("fence");
+    end = rdcycle();
+    printf("MAP execution took %lu cycles\n", end - start);
 
     // HW: test if words in file 2 are in Bloom filter
+    start = rdcycle();  
+    asm volatile ("fence");
     hw_misses = hw_dummy_countMissFromArray(NUM_WORDS);
+    asm volatile ("fence");
+    end = rdcycle();    
+    printf("DUMMY execution took %lu cycles\n", end - start);
     // print out test results
     printf(" HW Miss: %d: \n", hw_misses);
 
+    // HW: test if words in file 2 are in Bloom filter
+    start = rdcycle();  
+    asm volatile ("fence");
     hw_misses = hw_countMissFromArray(NUM_WORDS);
-
+    asm volatile ("fence");
+    end = rdcycle();    
+    printf("TEST execution took %lu cycles\n", end - start);
     // print out test results
     printf(" HW Miss: %d: \n", hw_misses);
+    
     return 0;
 }
