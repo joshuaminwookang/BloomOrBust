@@ -21,7 +21,7 @@
 #include "small_data.h"
 
 // #define TINY 11
-#define TINYV2 30
+//#define TINYV2 30
 #define TINYV3_MAP  50
 // #define TINYV3_TEST  50
 
