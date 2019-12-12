@@ -141,7 +141,7 @@ int hw_dummy_countMissFromArray(int num)
  */
 int main(void)
 {
-    unsigned long hw_start, hw_end;
+    unsigned long start, end;
     int hw_misses;
 
     // Compute Map with accelerator   
@@ -172,6 +172,6 @@ int main(void)
     printf("TEST execution took %lu cycles\n", end - start);
     // print out test results
     printf(" HW Miss: %d: \n", hw_misses);
-    
+
     return 0;
 }
