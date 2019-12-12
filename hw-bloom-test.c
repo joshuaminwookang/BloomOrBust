@@ -9,6 +9,9 @@
 #include "rocc.h"
 #include "encoding.h"
 #include "compiler.h"
+#include "small_data.h"
+#include "medium_data.h"
+#include "big_data.h"
 
 #ifdef __linux
 #include <sys/mman.h>
@@ -18,16 +21,20 @@
 #define M_NUM_BITS 20000 // number of elements in Bloom filter
 #define K_NUM_HASH 5     // number of hash functions
 #define HASH_NUM 5381    // number used for hash function
-#define NUM_WORDS 20
+#define TINY 11
+#define SMALL 10000
+#define MEDIUM 466551
+#define BIG 1095695
+
 
 // hard-coded test inputs
 static char tiny0 [20][BUF_SIZE] = {
-    "words", "in", "this", 
+    "Words", "in", "this", 
     "file",  "will", "be", "added", "to", "the", "bloom" , "filter"
 };
 
 static char tiny1 [20][BUF_SIZE] = {
-    "these", "words", "may", "or",
+    "These", "words", "may", "or",
     "may",  "not", "be", "in", "the", "bloom" , "filter"
 };
 
@@ -57,9 +64,9 @@ unsigned long hashstring(char* word)
 static inline unsigned long hw_initBloom()
 {
     unsigned long rd;
-    asm volatile ("fence");
+    // asm volatile ("fence");
 	ROCC_INSTRUCTION(2, 0);
-    asm volatile ("fence");
+    // asm volatile ("fence");
 	return rd ;
 }
 
@@ -71,9 +78,9 @@ static inline unsigned long hw_initBloom()
 static inline unsigned long hw_mapToBloom(long hash)
 {
     unsigned long rd;
-    asm volatile ("fence");
+    // asm volatile ("fence");
 	ROCC_INSTRUCTION_DS(2, rd, hash, 1);
-    asm volatile ("fence");
+    // asm volatile ("fence");
 	return rd;
 }
 
@@ -85,9 +92,9 @@ static inline unsigned long hw_mapToBloom(long hash)
 static inline unsigned long hw_testBloom(long hash)
 {
     unsigned long rd;
-    asm volatile ("fence");
+    // asm volatile ("fence");
 	ROCC_INSTRUCTION_DS(2, rd, hash, 2);
-    asm volatile ("fence");
+    // asm volatile ("fence");
 	return rd;
 }
 
@@ -154,7 +161,8 @@ int main(void)
     start = rdcycle();                                                                                                                                      
     asm volatile ("fence");
     // HW: map words to Bloom filter
-    hw_mapWordsFromArray(NUM_WORDS);
+    #ifdef TINY
+        hw_mapWordsFromArray(NUM_WORDS);
     asm volatile ("fence");
     end = rdcycle();
     printf("MAP execution took %lu cycles\n", end - start);
