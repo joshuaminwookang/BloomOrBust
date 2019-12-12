@@ -9,9 +9,6 @@
 #include "rocc.h"
 #include "encoding.h"
 #include "compiler.h"
-#include "small_data.h"
-#include "medium_data.h"
-#include "big_data.h"
 
 #ifdef __linux
 #include <sys/mman.h>
@@ -27,6 +24,18 @@
 // #define BIG 1095695
 
 #define MAP_SIZE 466551
+
+#ifdef TINY
+#include "small_data.h"
+#endif
+#ifdef SMALL
+#include "small_data.h"
+#endif
+#ifdef BIG
+#include "big_data.h"
+#endif
+
+#include "medium_data.h"
 
 /* global Bloom bit array */
 unsigned char bloom_filter_array[M_NUM_BITS];
