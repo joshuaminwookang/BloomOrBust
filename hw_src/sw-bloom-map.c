@@ -157,19 +157,19 @@ int main(void)
     start = rdcycle(); 
     // map words to Bloom filter
     #ifdef TINY
-    mapWordsFromArray(TINY);
+    mapWordsFromArray(&bloom_filter_array, TINY);
     #endif
 
     #ifdef SMALL
-    mapWordsFromArray(SMALL);
+    mapWordsFromArray(&bloom_filter_array, SMALL);
     #endif
 
     #ifdef MEDIUM 
-    mapWordsFromArray(MEDIUM);
+    mapWordsFromArray(&bloom_filter_array, MEDIUM);
     #endif
 
     #ifdef BIG 
-    mapWordsFromArray(BIG);
+    mapWordsFromArray(&bloom_filter_array, BIG);
     #endif
     end = rdcycle();  
     printf("SW MAP execution took %lu cycles\n", end - start); 
@@ -177,7 +177,7 @@ int main(void)
     // SW: TEST
     start = rdcycle(); 
     // test if words in file 2 are in Bloom filter
-    sw_misses = countMissFromArray(TEST_SIZE);
+    sw_misses = countMissFromArray(&bloom_filter_array,TEST_SIZE);
     end = rdcycle(); 
 
     // print out info
