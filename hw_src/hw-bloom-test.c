@@ -33,11 +33,7 @@
 #ifdef BIG
 #include "big_data.h"
 #endif
-
 #include "medium_data.h"
-
-/* global Bloom bit array */
-unsigned char bloom_filter_array[M_NUM_BITS];
 
 
 /*
