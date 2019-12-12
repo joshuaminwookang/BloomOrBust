@@ -241,18 +241,10 @@ int main(void)
 {
     unsigned long start, end;
     int hw_misses = 0;
-    int sw_misses = 0;
 
     // Initalize BF Accelerator
     // asm volatile ("fence");
     // hw_initBloom();
-
-    // Initialize SW bloom filter array
-    // memset(bloom_filter_array, 0, M_NUM_BITS);
-    for (int i = 0; i < M_NUM_BITS; i++)
-    {
-        bloom_filter_array[0] = 0;
-    }
 
     // Compute Map with accelerator   
     start = rdcycle();                                                                                                                                      
@@ -284,34 +276,6 @@ int main(void)
     printf("TEST execution took %lu cycles\n", end - start);
     // print out test results
     printf(" HW Miss: %d: \n", hw_misses);
-
-    // SW: Map
-    start = rdcycle(); 
-    // map words to Bloom filter
-    mapWordsFromArray(MAP_SIZE);
-    end = rdcycle();  
-    printf("SW MAP execution took %lu cycles\n", end - start); 
-
-    // SW: TEST
-    start = rdcycle(); 
-    // test if words in file 2 are in Bloom filter
-    #ifdef TINY
-        sw_misses = countMissFromArray(TINY);
-    #endif 
-    #ifdef SMALL
-        sw_misses = countMissFromArray(SMALL);
-    #endif 
-    #ifdef MEDIUM
-        sw_misses = countMissFromArray(MEDIUM);
-    #endif 
-    #ifdef BIG
-        sw_misses = countMissFromArray(BIG);
-    #endif 
-    end = rdcycle(); 
-
-    // print out info
-    printf("SW TEST execution took %lu cycles\n", end - start); 
-    printf("Software Misses: %d\n", sw_misses);
 
     return 0;
 }
