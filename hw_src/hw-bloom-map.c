@@ -18,22 +18,24 @@
 #define M_NUM_BITS 20000 // number of elements in Bloom filter
 #define K_NUM_HASH 5     // number of hash functions
 #define HASH_NUM 5381    // number used for hash function
-#define TINY 11
+// #define TINY 11
+#define TINYV2 30
+// #define TINYV3 50
 // #define SMALL 10000
 // #define MEDIUM 466551
 // #define BIG 1095695
-#define TEST_SIZE 1095695
+// #define TEST_SIZE 1095695
 
-#ifdef TINY
+// #ifdef TINY
+// #include "small_data.h"
+// #endif
+// #ifdef TINYV2
+// #include "small_data.h"
+// #endif
+// #ifdef TINYV3
+// #include "medium_data.h"
+// #endif
 #include "small_data.h"
-#endif
-#ifdef SMALL
-#include "small_data.h"
-#endif
-#ifdef MEDIUM
-#include "medium_data.h"
-#endif
-#include "big_data.h"
 
 
 /*
@@ -107,18 +109,12 @@ void hw_mapWordsFromArray(int num)
        unsigned long returnValue ; 
     //    
         #ifdef TINY       
-        printf("Word to MAP: %s with hash value :%lu\n",tiny0[i], hashstring(tiny0[i]));
         returnValue = hw_mapToBloom(hashstring(tiny0[i]));
+        #endif
+        #ifdef TINYV2       
+        printf("Word to MAP: %s with hash value :%lu\n",tiny2[i], hashstring(tiny2[i]));
+        returnValue = hw_mapToBloom(hashstring(tiny2[i]));
         printf("HW Map Function returned: %lu\n", returnValue);
-        #endif
-        #ifdef SMALL       
-        returnValue = hw_mapToBloom(hashstring(small[i]));
-        #endif
-        #ifdef MEDIUM       
-        returnValue = hw_mapToBloom(hashstring(medium[i]));
-        #endif
-        #ifdef BIG       
-        returnValue = hw_mapToBloom(hashstring(large[i]));
         #endif
     }
 }
@@ -134,12 +130,11 @@ int hw_countMissFromArray(int num)
     for (int i = 0; i < num; i++)
     {
         #ifdef TINY
-        printf("Word to TEST: %s with hash value : %lu\n",tiny1[i], hashstring(tiny1[i]));
         count = hw_testBloom(hashstring(tiny1[i]));
-        printf("Current miss count: %d\n", count);
-        #else
-        count = hw_testBloom(hashstring(big[i]));
         #endif 
+        printf("Word to TEST: %s with hash value :%lu\n",tiny3[i], hashstring(tiny3[i]));
+        count = hw_testBloom(hashstring(tiny3[i]));
+        printf("HW TEST Function returned: %lu\n", returnValue);
     }
 
     return count;
@@ -152,7 +147,7 @@ int main(void)
 {
     unsigned long start, end;
     int hw_misses = 0;
-    
+
     printf(" Beginning HW test for MAP()\n");
     // Initalize BF Accelerator
     // asm volatile ("fence");
@@ -164,14 +159,8 @@ int main(void)
     #ifdef TINY
         hw_mapWordsFromArray(TINY);
     #endif 
-    #ifdef SMALL
-        hw_mapWordsFromArray(SMALL);
-    #endif 
-    #ifdef MEDIUM
-        hw_mapWordsFromArray(MEDIUM);
-    #endif 
-    #ifdef BIG
-        hw_mapWordsFromArray(BIG);
+    #ifdef TINYV2
+        hw_mapWordsFromArray(TINYV2);
     #endif 
     asm volatile ("fence");
     end = rdcycle();
@@ -182,9 +171,11 @@ int main(void)
     asm volatile ("fence");
     #ifdef TINY
         hw_misses = hw_countMissFromArray(TINY);
-    #else
-        hw_misses = hw_countMissFromArray(TEST_SIZE);
     #endif 
+    #ifdef TINYV2
+        hw_misses = hw_countMissFromArray(TINYV2);
+    #endif 
+    
     asm volatile ("fence");
     end = rdcycle();   
     printf("TEST execution took %lu cycles\n", end - start);

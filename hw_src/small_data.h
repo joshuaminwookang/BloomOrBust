@@ -18,6 +18,18 @@ static char tiny1 [11][100] = {
     "may",  "not", "be", "in", "the", "bloom" , "filter"
 };
 
+static char tiny2 [30][100] = {
+    "Hello", "darkness", "my", "old", "friend", "I", "turn", "the", "records","on"
+    "Mary", "had", "a", "little", "lamb", "until", "the", "lights", "come","on"
+    "itsey", "bitsey", "spider", "went", "up", "the", "water", "sprout", "gone","coldplay"
+};
+
+static char tiny3 [30][100] = {
+    "I", "turn", "the", "music", "up", "I", "turn", "the", "records","on"
+    "I", "shut", "the", "world", "outside", "until", "the", "lights", "come","on"
+    "Maybe", "the", "streets", "alight", "maybe", "the", "trees", "are", "gone","waterfull"
+};
+
 static char small [10000][100] = {
 "a",
 "aa",
