@@ -244,8 +244,8 @@ int main(void)
     int sw_misses = 0;
 
     // Initalize BF Accelerator
-    asm volatile ("fence");
-    hw_initBloom();
+    // asm volatile ("fence");
+    // hw_initBloom();
 
     // Initialize SW bloom filter array
     // memset(bloom_filter_array, 0, M_NUM_BITS);
