@@ -134,7 +134,7 @@ int hw_countMissFromArray(int num)
         #endif 
         printf("Word to TEST: %s with hash value :%lu\n",tiny3[i], hashstring(tiny3[i]));
         count = hw_testBloom(hashstring(tiny3[i]));
-        printf("HW TEST Function returned: %lu\n", returnValue);
+        printf("HW TEST Function returned: %lu\n", count);
     }
 
     return count;
