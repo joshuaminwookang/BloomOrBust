@@ -144,6 +144,7 @@ int main(void)
     unsigned long start, end;
     int sw_misses = 0;
 
+    printf(" Beginning SW test for Map\n");
     /* SW Bloom bit array */
     unsigned char bloom_filter_array[M_NUM_BITS];   
     // Initialize SW bloom filter array
@@ -153,6 +154,7 @@ int main(void)
     //     bloom_filter_array[0] = 0;
     // }
 
+    printf(" YAy SW test for Map\n");
     // SW: Map
     start = rdcycle(); 
     // map words to Bloom filter
