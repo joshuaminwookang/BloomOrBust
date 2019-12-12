@@ -57,7 +57,9 @@ unsigned long hashstring(char* word)
 static inline unsigned long hw_initBloom()
 {
     unsigned long rd;
+    asm volatile ("fence");
 	ROCC_INSTRUCTION(2, 0);
+    asm volatile ("fence");
 	return rd ;
 }
 
@@ -69,7 +71,9 @@ static inline unsigned long hw_initBloom()
 static inline unsigned long hw_mapToBloom(long hash)
 {
     unsigned long rd;
+    asm volatile ("fence");
 	ROCC_INSTRUCTION_DS(2, rd, hash, 1);
+    asm volatile ("fence");
 	return rd;
 }
 
@@ -81,7 +85,9 @@ static inline unsigned long hw_mapToBloom(long hash)
 static inline unsigned long hw_testBloom(long hash)
 {
     unsigned long rd;
+    asm volatile ("fence");
 	ROCC_INSTRUCTION_DS(2, rd, hash, 2);
+    asm volatile ("fence");
 	return rd;
 }
 
