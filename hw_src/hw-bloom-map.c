@@ -152,7 +152,7 @@ int main(void)
 {
     unsigned long start, end;
     int hw_misses = 0;
-
+    printf(" Beginning HS test for Test()\n");
     // Initalize BF Accelerator
     // asm volatile ("fence");
     // hw_initBloom();

@@ -24,6 +24,7 @@
 // #define BIG 1095695
 
 #define MAP_SIZE 466551 
+
 #ifdef TINY
 #include "small_data.h"
 #endif
@@ -33,6 +34,7 @@
 #ifdef BIG
 #include "big_data.h"
 #endif
+
 #include "medium_data.h"
 
 
@@ -138,23 +140,6 @@ int hw_countMissFromArray(int num)
     return count;
 }
 
-/* (Using HW accelerator)
- * Counts number of misses from tests
- */
-int hw_dummy_countMissFromArray(int num)
-{
-
-    int count = 0;
-
-    for (int i = 0; i < num; i++)
-    {
-        printf("Word to TEST: %s with hash value :%lu\n",tiny0[i], hashstring(tiny0[i]));
-        count = hw_testBloom(hashstring(tiny0[i]));
-        printf("Current miss count: %d\n", count);
-    }
-
-    return count;
-}
 
 /*
  * Test script 
@@ -172,7 +157,7 @@ int main(void)
     start = rdcycle();                                                                                                                                      
     asm volatile ("fence");
     // HW: map words to Bloom filter
-    hw_mapWordsFromArray(10000);
+    hw_mapWordsFromArray(MAP_SIZE);
     asm volatile ("fence");
     end = rdcycle();
     printf("MAP execution took %lu cycles\n", end - start);
