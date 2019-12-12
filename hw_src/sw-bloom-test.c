@@ -18,24 +18,11 @@
 #define M_NUM_BITS 20000 // number of elements in Bloom filter
 #define K_NUM_HASH 5     // number of hash functions
 #define HASH_NUM 5381    // number used for hash function
-#define TINY 11
-// #define SMALL 10000
-// #define MEDIUM 466551
-// #define BIG 1095695
-
-#define MAP_SIZE 466551
-
-#ifdef TINY
 #include "small_data.h"
-#endif
-#ifdef SMALL
-#include "small_data.h"
-#endif
-#ifdef BIG
-#include "big_data.h"
-#endif
 
-#include "medium_data.h"
+// #define TINY 11
+#define TINYV2 30
+// #define TINYV3 50
 
 /* global Bloom bit array */
 unsigned char bloom_filter_array[M_NUM_BITS];

@@ -18,22 +18,11 @@
 #define M_NUM_BITS 20000 // number of elements in Bloom filter
 #define K_NUM_HASH 5     // number of hash functions
 #define HASH_NUM 5381    // number used for hash function
-#define TINY 11
-// #define SMALL 10000
-// #define MEDIUM 466551
-// #define BIG 1095695
-#define TEST_SIZE 1095695
+#include "small_data.h"
 
-#ifdef TINY
-#include "small_data.h"
-#endif
-#ifdef SMALL
-#include "small_data.h"
-#endif
-#ifdef MEDIUM
-#include "medium_data.h"
-#endif
-#include "big_data.h"
+// #define TINY 11
+#define TINYV2 30
+// #define TINYV3 50
 
 
 /*
@@ -64,15 +53,10 @@ void mapToBloom(unsigned char * filter,int index)
     #ifdef TINY
     long x = hashstring(tiny0[index]); 
     #endif
-    #ifdef SMALL
-    long x = hashstring(small[index]); 
+    #ifdef TINYV2
+    long x = hashstring(tiny2[index]); 
     #endif
-    #ifdef MEDIUM
-    long x = hashstring(medium[index]); 
-    #endif
-    #ifdef BIG
-    long x = hashstring(large[index]); 
-    #endif
+    
     long y = x >> 4;
 
     for (int i = 0; i < K_NUM_HASH; i++)
@@ -103,7 +87,12 @@ void mapWordsFromArray(unsigned char * filter, int num)
  */
 int testBloom(unsigned char * filter,int index)
 {
-    long x = hashstring(big[index]); 
+    #ifdef TINY
+    long x = hashstring(tiny1[index]); 
+    #endif
+    #ifdef TINYV2
+    long x = hashstring(tiny3[index]); 
+    #endif
     long y = x >> 4; 
 
     for (int i = 0; i < K_NUM_HASH; i++)
@@ -154,7 +143,6 @@ int main(void)
     //     bloom_filter_array[0] = 0;
     // }
 
-    printf(" YAy SW test for Map\n");
     // SW: Map
     start = rdcycle(); 
     // map words to Bloom filter
@@ -162,16 +150,8 @@ int main(void)
     mapWordsFromArray(&bloom_filter_array, TINY);
     #endif
 
-    #ifdef SMALL
-    mapWordsFromArray(&bloom_filter_array, SMALL);
-    #endif
-
-    #ifdef MEDIUM 
-    mapWordsFromArray(&bloom_filter_array, MEDIUM);
-    #endif
-
-    #ifdef BIG 
-    mapWordsFromArray(&bloom_filter_array, BIG);
+    #ifdef TINYV2
+    mapWordsFromArray(&bloom_filter_array, TINYV2);
     #endif
     end = rdcycle();  
     printf("SW MAP execution took %lu cycles\n", end - start); 
