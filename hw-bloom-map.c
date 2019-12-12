@@ -25,7 +25,7 @@
 // #define SMALL 10000
 // #define MEDIUM 466551
 // #define BIG 1095695
-#define DEFAULT 10000
+
 
 // hard-coded test inputs
 static char tiny0 [20][BUF_SIZE] = {
@@ -107,7 +107,21 @@ void hw_mapWordsFromArray(int num)
     for (int i = 0; i < num; i++)
     {
        unsigned long returnValue ; 
+    //    
+        #ifdef TINY       
+        printf("Word to MAP: %s with hash value :%lu\n",tiny0[i], hashstring(tiny0[i]));
+        returnValue = hw_mapToBloom(hashstring(tiny0[i]));
+        printf("HW Map Function returned: %lu\n", returnValue);
+        #endif
+        #ifdef SMALL       
         returnValue = hw_mapToBloom(hashstring(small[i]));
+        #endif
+        #ifdef MEDIUM       
+        returnValue = hw_mapToBloom(hashstring(medium[i]));
+        #endif
+        #ifdef BIG       
+        returnValue = hw_mapToBloom(hashstring(large[i]));
+        #endif
     }
 }
 
@@ -125,18 +139,11 @@ int hw_countMissFromArray(int num)
         printf("Word to TEST: %s with hash value : %lu\n",tiny1[i], hashstring(tiny1[i]));
         count = hw_testBloom(hashstring(tiny1[i]));
         printf("Current miss count: %d\n", count);
-        #endif 
-        #ifdef SMALL
+        #else
         count = hw_testBloom(hashstring(small[i]));
-        #endif
-        #ifdef MEDIUM
-        count = hw_testBloom(hashstring(medium[i]));
-        #endif
-        #ifdef BIG
-        count = hw_testBloom(hashstring(big[i]));
-        #endif
-
+        #endif 
     }
+
     return count;
 }
 
@@ -174,7 +181,18 @@ int main(void)
     start = rdcycle();                                                                                                                                      
     asm volatile ("fence");
     // HW: map words to Bloom filter
-    hw_mapWordsFromArray(10000);
+    #ifdef TINY
+        hw_mapWordsFromArray(TINY);
+    #endif 
+    #ifdef SMALL
+        hw_mapWordsFromArray(SMALL);
+    #endif 
+    #ifdef MEDIUM
+        hw_mapWordsFromArray(MEDIUM);
+    #endif 
+    #ifdef BIG
+        hw_mapWordsFromArray(BIG);
+    #endif 
     asm volatile ("fence");
     end = rdcycle();
     printf("MAP execution took %lu cycles\n", end - start);
@@ -194,15 +212,8 @@ int main(void)
     asm volatile ("fence");
     #ifdef TINY
         hw_misses = hw_countMissFromArray(TINY);
-    #endif 
-    #ifdef SMALL
-        hw_misses = hw_countMissFromArray(SMALL);
-    #endif 
-    #ifdef MEDIUM
-        hw_misses = hw_countMissFromArray(MEDIUM);
-    #endif 
-    #ifdef BIG
-        hw_misses = hw_countMissFromArray(BIG);
+    #else
+        hw_misses = hw_countMissFromArray(10000);
     #endif 
     asm volatile ("fence");
     end = rdcycle();   
