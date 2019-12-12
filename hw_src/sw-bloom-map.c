@@ -24,6 +24,8 @@
 #define TINYV2 30
 // #define TINYV3 50
 
+/* global Bloom bit array */
+unsigned char bloom_filter_array[M_NUM_BITS];
 
 /*
  * Hash function for a string using Horner's Rule.
@@ -48,7 +50,7 @@ unsigned long hashstring(char* word)
  * map word to bloom filter.
  * Places 1 in filter at indices that given word maps to.
  */
-void mapToBloom(unsigned char * filter,int index)
+void mapToBloom(int index)
 {
     #ifdef TINY
     long x = hashstring(tiny0[index]); 
@@ -63,18 +65,18 @@ void mapToBloom(unsigned char * filter,int index)
     {
         x = (x + y) % M_NUM_BITS; // ith hash value
         y = (y + i) % M_NUM_BITS; // displacement
-        filter[x] = 1;
+        bloom_filter_array[x] = 1;
     }
 }
 
 /*
  * Reads words from array and maps them to Bloom filter.
  */
-void mapWordsFromArray(unsigned char * filter, int num)
+void mapWordsFromArray(int num)
 {
     for (int i = 0; i < num; i++)
     {
-        mapToBloom(filter, i);
+        mapToBloom(i);
     }
 }
 
@@ -85,7 +87,7 @@ void mapWordsFromArray(unsigned char * filter, int num)
  *
  * Returns 1 if search is positive, 0 if negative.
  */
-int testBloom(unsigned char * filter,int index)
+int testBloom(int index)
 {
     #ifdef TINY
     long x = hashstring(tiny1[index]); 
@@ -100,7 +102,7 @@ int testBloom(unsigned char * filter,int index)
         x = (x + y) % M_NUM_BITS; // ith hash value
         y = (y + i) % M_NUM_BITS; // displacement
 
-        if (!filter[x])
+        if (!bloom_filter_array[x])
         {
             return 0;
         }
@@ -109,13 +111,13 @@ int testBloom(unsigned char * filter,int index)
     return 1;
 }
 
-int countMissFromArray(unsigned char * filter, int num)
+int countMissFromArray(int num)
 {
     int count = 0;
 
     for (int i = 0; i < num; i++)
     {
-        if (!testBloom(filter, i))
+        if (!testBloom(i))
         {
             count++;
         }
@@ -134,8 +136,7 @@ int main(void)
     int sw_misses = 0;
 
     printf(" Beginning SW test for Map\n");
-    /* SW Bloom bit array */
-    unsigned char bloom_filter_array[M_NUM_BITS];   
+    
     // Initialize SW bloom filter array
     memset(bloom_filter_array, 0, M_NUM_BITS);
     // for (int i = 0; i < M_NUM_BITS; i++)
@@ -147,11 +148,11 @@ int main(void)
     start = rdcycle(); 
     // map words to Bloom filter
     #ifdef TINY
-    mapWordsFromArray(&bloom_filter_array, TINY);
+    mapWordsFromArray(TINY);
     #endif
 
     #ifdef TINYV2
-    mapWordsFromArray(&bloom_filter_array, TINYV2);
+    mapWordsFromArray(TINYV2);
     #endif
     end = rdcycle();  
     printf("SW MAP execution took %lu cycles\n", end - start); 
@@ -159,7 +160,12 @@ int main(void)
     // SW: TEST
     start = rdcycle(); 
     // test if words in file 2 are in Bloom filter
-    sw_misses = countMissFromArray(&bloom_filter_array,TEST_SIZE);
+    #ifdef TINY
+    sw_misses = countMissFromArray(TINY);
+    #endif
+    #ifdef TINYV2
+    sw_misses = countMissFromArray(TINYV2);
+    #endif
     end = rdcycle(); 
 
     // print out info
