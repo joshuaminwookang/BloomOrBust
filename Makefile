@@ -301,6 +301,7 @@ run: build
 clean:
 	rm -f bloom-seq bloom-cuda *.o
 	rm -rf ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)/$(build)
+	rm -rf *.dSYM
 
 clobber: clean
 

@@ -26,18 +26,6 @@
 // #define MEDIUM 466551
 // #define BIG 1095695
 #define DEFAULT 10000
-
-// hard-coded test inputs
-static char tiny0 [20][BUF_SIZE] = {
-    "Words", "in", "this", 
-    "file",  "will", "be", "added", "to", "the", "bloom" , "filter"
-};
-
-static char tiny1 [20][BUF_SIZE] = {
-    "These", "words", "may", "or",
-    "may",  "not", "be", "in", "the", "bloom" , "filter"
-};
-
 /*
  * Hash function for a string using Horner's Rule.
  * Given a string, returns a number.

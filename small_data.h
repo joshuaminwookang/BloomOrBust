@@ -8,18 +8,17 @@
  */
 
 
-#define BUF_SIZE 100     // max size of word
-static char tiny0 [11][BUF_SIZE] = {
+static char tiny0 [11][100] = {
     "Words", "in", "this", 
     "file",  "will", "be", "added", "to", "the", "bloom" , "filter"
 };
 
-static char tiny1 [11][BUF_SIZE] = {
+static char tiny1 [11][100] = {
     "These", "words", "may", "or",
     "may",  "not", "be", "in", "the", "bloom" , "filter"
 };
 
-static char small [10000][BUF_SIZE] = {
+static char small [10000][100] = {
 "a",
 "aa",
 "aaa",
