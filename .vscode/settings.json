@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "string.h": "c",
-        "medium_data.h": "c",
-        "small_data.h": "c"
-    }
-}
