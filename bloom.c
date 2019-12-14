@@ -20,6 +20,7 @@ void mapToBloom(unsigned char *filter, char *word)
     long *hashes = (long *)calloc(K_NUM_HASH, sizeof(long));
     hash(hashes, word);
 
+    // set the bits at the hash value indices to 1
     for (int i = 0; i < K_NUM_HASH; i++)
     {
         filter[hashes[i]] = 1;
@@ -33,8 +34,9 @@ void mapWordsFromFile(FILE *fp, unsigned char *filter)
 {
     char buffer[BUF_SIZE];
 
-    rewind(fp);
+    rewind(fp); // make sure we start at beginning
 
+    // read in each word, remove punctuation, and map it
     while (fscanf(fp, "%s", buffer) == 1)
     {
         removePunct(buffer);
@@ -53,22 +55,30 @@ void mapWordsFromArray(String *words, int num, unsigned char *filter)
     }
 }
 
+/*
+ * Counts the number of misses by testing each word in array.
+ */
 int countMissFromArray(String *words, int num, unsigned char *filter)
 {
-
     int count = 0;
 
     for (int i = 0; i < num; i++)
     {
         if (!testBloom(filter, words[i].word))
         {
-            count++;
+	  count++; // miss
         }
     }
 
     return count;
 }
 
+/*
+ * Reads files and maps words from file 1 to Bloom filter.
+ * Tests words in file 2.
+ * 
+ * Reports running time info at the end.
+ */
 int main(int argc, char **argv)
 {
 

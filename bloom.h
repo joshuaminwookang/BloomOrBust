@@ -14,20 +14,22 @@
 #define M_NUM_BITS 20000 // number of elements in Bloom filter
 #define K_NUM_HASH 5     // number of hash functions
 #define HASH_NUM 5381    // number used for hash function
-#define INIT_WORDS 512
-#define MAX_WORDS
+#define INIT_WORDS 512   // starting number of words for arrays
 
+
+// struct representing a String of size BUF_SIZE
 typedef struct String
 {
     char word[BUF_SIZE];
 } String;
 
-/*      METHODS IN THIS HEADER       */
 
-int cmpString(const void *a, const void *b)
-{
-    return strcmp(((String *)a)->word, ((String *)b)->word);
-}
+
+/*      METHODS IN THIS HEADER FILE      */
+
+
+// for sorting String arrays
+int cmpString(const void *a, const void *b);
 
 // return a hash value for String
 unsigned long hashstring(char *word);
@@ -58,6 +60,14 @@ void printInfo(int words_mapped, int words_test,
                double map_time, double test_time, int misses);
 
 /*   Functions used in Sequential and CUDA implementations   */
+
+/*
+ * Function to be used with qsort() for sorting the String array
+ */
+int cmpString(const void *a, const void *b)
+{
+    return strcmp(((String *)a)->word, ((String *)b)->word);
+}
 
 /*
  * Hash function for a string using Horner's Rule.
@@ -136,8 +146,11 @@ int fileToArray(FILE *fp, String **words)
     while (fscanf(fp, "%s", buffer) != EOF)
     {
         removePunct(buffer);
+
+	// copy word from buffer to array
         strcpy((*words)[i++].word, buffer);
 
+	// need to reallocate size
         if (i >= size)
         {
             size = size * 2;
@@ -149,6 +162,7 @@ int fileToArray(FILE *fp, String **words)
                 printf("Reallocation failed at size %d.\n", size);
             }
         }
+	
     }
 
     return i;
@@ -166,6 +180,7 @@ int testBloom(unsigned char *filter, char *word)
     long *hashes = (long *)calloc(K_NUM_HASH, sizeof(long));
     hash(hashes, word);
 
+    // check if each hash value is set in filter
     for (int i = 0; i < K_NUM_HASH; i++)
     {
         if (!filter[hashes[i]])
@@ -176,7 +191,6 @@ int testBloom(unsigned char *filter, char *word)
     }
 
     free(hashes);
-
     return 1;
 }
 
@@ -187,8 +201,10 @@ void testWordsFromFile(FILE *fp, unsigned char *filter)
 {
     char buffer[BUF_SIZE];
 
+    // make sure we start at beginning
     rewind(fp);
 
+    // read in each word and print the result of the test
     while (fscanf(fp, "%s", buffer) == 1)
     {
         removePunct(buffer);
@@ -206,12 +222,15 @@ int countMissFromFile(FILE *fp, unsigned char *filter)
     char buffer[BUF_SIZE];
     int count = 0;
 
+    // start at BOF
     rewind(fp);
 
+    // read each word
     while (fscanf(fp, "%s", buffer) == 1)
     {
         removePunct(buffer);
 
+	// not found
         if (!testBloom(filter, buffer))
         {
             count++;

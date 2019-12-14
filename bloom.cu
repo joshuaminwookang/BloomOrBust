@@ -11,9 +11,10 @@
 
 /*  Change these to test different versions of the CUDA implementation  */
 
-#define SHARED_MAP      // Use for shared copy of filter in Map() kernel
+//#define SHARED_MAP      // Use for shared copy of filter in Map() kernel
 #define SHARED_TEST     // Use for shared copy of miss counter in Test() kernel
-#define BLOCK_SIZE 8.0
+#define SORT		  // Use to sort arrays before processing.
+#define BLOCK_SIZE 64.0
 
 
 
@@ -39,9 +40,10 @@ __device__ unsigned long cuda_hashstring(char *word)
  */
 __device__ void cuda_hash(long *hashes, char *word)
 {
-  unsigned long x = cuda_hashstring(word);
+  unsigned long x = cuda_hashstring(word); // get string as a number
   unsigned long y = x >> 4;
 
+  // x represents each index the word maps to
   for (int i = 0; i < K_NUM_HASH; i++)
   {
     x = (x + y) % M_NUM_BITS;
@@ -59,6 +61,7 @@ __device__ int cuda_testBloom(unsigned char *filter, char *word)
   long hashes[K_NUM_HASH];
   cuda_hash(hashes, word);
 
+  // check bloom filter at each hash value
   for (int i = 0; i < K_NUM_HASH; i++)
   {
     // miss
@@ -85,7 +88,8 @@ __global__ void s_cuda_countMisses(unsigned char *filter, String *words, int *co
   }
 
   __syncthreads();
-  
+
+  // add results of the test function which only returns 1 if a miss
   if (index < num_words)
   {
     int miss = cuda_testBloom(filter, words[index].word);
@@ -93,7 +97,9 @@ __global__ void s_cuda_countMisses(unsigned char *filter, String *words, int *co
   }
 
   __syncthreads();
-  
+
+
+  // only one thread needs to update the value on device
   if (threadIdx.x == 0) {
     atomicAdd(count, misses);
   }
@@ -105,9 +111,13 @@ __global__ void s_cuda_countMisses(unsigned char *filter, String *words, int *co
  */
 __global__ void cuda_countMisses(unsigned char *filter, String *words, int *count, int num_words)
 {
-  int index = blockIdx.x * blockDim.x + threadIdx.x;
+  int index = blockIdx.x * blockDim.x + threadIdx.x; // get index
+
+  // check if index is valid
   if (index < num_words)
   {
+
+    // add result of test function, +0 if hit, +1 if miss
     int miss = cuda_testBloom(filter, words[index].word);
     atomicAdd(count, miss);
   }
@@ -121,6 +131,7 @@ __device__ void cuda_mapToBloom(unsigned char *filter, char *word)
   long hashes[K_NUM_HASH];
   cuda_hash(hashes, word);
 
+  // set bits at hash value indices
   for (int i = 0; i < K_NUM_HASH; i++)
   {
     filter[hashes[i]] = 1;
@@ -142,8 +153,11 @@ __global__ void s_cuda_mapFromArray(unsigned char *bf_array, String *words, int 
   }
   
   __syncthreads();
-  
+
+  // get index
   int index = blockIdx.x * blockDim.x + threadIdx.x;
+
+  // check if valid index
   if (index < num_words)
   {
     cuda_mapToBloom(s_filter, words[index].word);
@@ -154,9 +168,7 @@ __global__ void s_cuda_mapFromArray(unsigned char *bf_array, String *words, int 
   // copy results into the bloom filter array
   for (int i = threadIdx.x; i < M_NUM_BITS; i += BLOCK_SIZE) {
 
-    // No Atomic functions for unsigned char
-    // Use branching to avoid race conditions by only setting when bit is set
-    // Branching also avoid unnecessary writes..
+    // only update if bit is set
     if (s_filter[i]) {
       bf_array[i] = s_filter[i];
     }
@@ -170,7 +182,10 @@ __global__ void s_cuda_mapFromArray(unsigned char *bf_array, String *words, int 
 __global__ void cuda_mapFromArray(unsigned char *bf_array, String *words, int num_words)
 {
 
+  // get index
   int index = blockIdx.x * blockDim.x + threadIdx.x;
+
+  // if index is valid
   if (index < num_words)
   {
     cuda_mapToBloom(bf_array, words[index].word);
@@ -179,17 +194,23 @@ __global__ void cuda_mapFromArray(unsigned char *bf_array, String *words, int nu
 
 }
 
-
+/*
+ * Reads in files to arrays 
+ * and runs map and test on the respective arrays.
+ *
+ * Reports running time data afterwards.
+ */
 int main(int argc, char **argv)
 {
 
+  // check number of arguments
   if (argc != 3)
   {
     printf("Usage: ./bloom WordsToMap WordsTotest\n");
     exit(1);
   }
 
-  // time measurement
+  // time measurement set up
   float map_time, test_time = 0;
   cudaEvent_t start_map, stop_map, start_test, stop_test;
   checkCudaErrors(cudaEventCreate(&start_map));
@@ -213,17 +234,23 @@ int main(int argc, char **argv)
   }
 
   // host data
-  String *h_string_array = (String *)malloc(INIT_WORDS * sizeof(String));
+  String *h_map_array = (String *)malloc(INIT_WORDS * sizeof(String));
   String *h_test_array = (String *)malloc(INIT_WORDS * sizeof(String));
   int h_misses[1];
   h_misses[0] = 0;
 
   // read in files
-  int num_words_mapped = fileToArray(map_fp, &h_string_array);
+  int num_words_mapped = fileToArray(map_fp, &h_map_array);
   int num_words_test = fileToArray(test_fp, &h_test_array);
-  
+
+#ifdef SORT
+  qsort(h_map_array, num_words_mapped, sizeof(String), cmpString);
+  qsort(h_test_array, num_words_test, sizeof(String), cmpString);
+#endif
+
+
   // device data
-  String *d_string_array;
+  String *d_map_array;
   String *d_test_array;
   int *d_misses;
 
@@ -234,8 +261,8 @@ int main(int argc, char **argv)
   checkCudaErrors(cudaMemcpy(d_bf_array, h_bf_array, M_NUM_BITS * sizeof(unsigned char), cudaMemcpyHostToDevice));
 
   // allocate device arrays for map kernel
-  checkCudaErrors(cudaMalloc((void **)&d_string_array, num_words_mapped * sizeof(String)));
-  checkCudaErrors(cudaMemcpy(d_string_array, h_string_array, num_words_mapped * sizeof(String), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMalloc((void **)&d_map_array, num_words_mapped * sizeof(String)));
+  checkCudaErrors(cudaMemcpy(d_map_array, h_map_array, num_words_mapped * sizeof(String), cudaMemcpyHostToDevice));
   checkCudaErrors(cudaMalloc((void **)&d_test_array, num_words_test * sizeof(String)));
   checkCudaErrors(cudaMemcpy(d_test_array, h_test_array, num_words_test * sizeof(String), cudaMemcpyHostToDevice));
 
@@ -244,11 +271,11 @@ int main(int argc, char **argv)
   checkCudaErrors(cudaEventRecord(start_map));
 #ifdef SHARED_MAP
   s_cuda_mapFromArray<<<ceil(num_words_mapped / BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char *)d_bf_array,
-                                                                      (String *)d_string_array,
+                                                                      (String *)d_map_array,
                                                                       num_words_mapped);
 #else
   cuda_mapFromArray<<<ceil(num_words_mapped / BLOCK_SIZE), BLOCK_SIZE>>>((unsigned char *)d_bf_array,
-									   (String *)d_string_array,
+									   (String *)d_map_array,
 									   num_words_mapped);
 #endif
   checkCudaErrors(cudaEventRecord(stop_map));
@@ -279,8 +306,7 @@ int main(int argc, char **argv)
   checkCudaErrors(cudaEventSynchronize(stop_test));
   checkCudaErrors(cudaEventElapsedTime(&test_time, start_test, stop_test));
 
-  // get resulting Bloom filter
-  //checkCudaErrors(cudaMemcpy(h_bf_array, d_bf_array, M_NUM_BITS * sizeof(unsigned char), cudaMemcpyDeviceToHost));
+  // get resulting miss counter
   checkCudaErrors(cudaMemcpy(h_misses, d_misses, sizeof(int), cudaMemcpyDeviceToHost));
 
   // print run time info
@@ -292,11 +318,11 @@ int main(int argc, char **argv)
   cudaEventDestroy(start_test);
   cudaEventDestroy(stop_test);
   cudaFree(d_bf_array);
-  cudaFree(d_string_array);
+  cudaFree(d_map_array);
   cudaFree(d_test_array);
   cudaFree(d_misses);
   free(h_bf_array);
-  free(h_string_array);
+  free(h_map_array);
   free(h_test_array);
 
   return 0;
