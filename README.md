@@ -34,7 +34,9 @@ CUDA Implementation: './bloom-cuda file1 file2'
 - Uncomment the following to use optimizations:
 
 #SHARED_MAP:  shared memory in map() kernel
+
 #SHARED_TEST: shared memory in test() kernel
+
 #SORT: 	      sort arrays before processing
 
 - Edit BLOCK_SIZE to a float to try different block sizes.
@@ -47,15 +49,21 @@ CUDA Implementation: './bloom-cuda file1 file2'
 - Comment/Uncomment to direct the test scripts to use different data sets:
 
 #TINY  : use 11 word data for both map and test
+
 #TINYV2  :  use 30 word data for both map and test
+
 #TINYV3_Map  : use 50 word data for map and 30 word for test
+
 #TINYV3_Test : use 50 word data for map and 50 word for test
 
 - *_data.h are header fills containing hard-coded word arrays (we need this because the RISC-V gcc does not support file or stream-based library functions, nor dynamic memory allocation)
 
 The Bloom filter Chisel file is meant to be placed in the Rocket-chip directory: 
+
 https://github.com/freechipsproject/rocket-chip
+
 and as in our case, it is a good idea to use Berkeley's Chipyard framework: 
+
 https://github.com/ucb-bar/chipyard
 
 To generate RISC-V binary workloads from our test scripts, please refer to the FireMarshal Documentation:
