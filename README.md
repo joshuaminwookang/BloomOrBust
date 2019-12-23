@@ -1,4 +1,4 @@
-# BloomOrBust
+# Bloom or Bust
 
 (c) 2019 Josh Minwoo Kang and Andrew Thai
 
