@@ -3,7 +3,8 @@
 (c) 2019 Josh Minwoo Kang and Andrew Thai
 
 Hardware accelerator and CUDA programming for accelerating Bloom filter based information queries.
-This implementation emulates Bloom filter behavior.
+
+Note that this implementation emulates Bloom filter behavior.
 
 ## Important Files
 
@@ -58,7 +59,7 @@ CUDA Implementation: './bloom-cuda file1 file2'
 
 - *_data.h are header fills containing hard-coded word arrays (we need this because the RISC-V gcc does not support file or stream-based library functions, nor dynamic memory allocation)
 
-The Bloom filter Chisel file is meant to be placed in the Rocket-chip directory: 
+Chisel source files should be placed within the Rocket-chip directory: 
 
 https://github.com/freechipsproject/rocket-chip
 
